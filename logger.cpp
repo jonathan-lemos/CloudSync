@@ -8,36 +8,35 @@
 
 #include "logger.hpp"
 #include "color.hpp"
+#include "io_mutex.hpp"
 
 namespace CloudSync{
 
 std::ostream* Logger::os = &(std::cerr);
 
 Logger::Logger(LogLevel ll, const char* file, int line, const char* func){
-	mutex.lock();
-
 	currentLevel = ll;
 	if (currentLevel != LEVEL_NONE && currentLevel <= reportingLevel){
 		switch (currentLevel){
 			case LEVEL_FATAL:
-				*os << "[" << Color::COLOR_MAGENTA << "FATAL" << Color::COLOR_NORMAL << "]";
+				ss << "[" << Color::COLOR_MAGENTA << "FATAL" << Color::COLOR_NORMAL << "]";
 				break;
 			case LEVEL_ERROR:
-				*os << "[" << Color::COLOR_RED << "ERROR" << Color::COLOR_NORMAL << "]";
+				ss << "[" << Color::COLOR_RED << "ERROR" << Color::COLOR_NORMAL << "]";
 				break;
 			case LEVEL_WARNING:
-				*os << "[" << Color::COLOR_YELLOW << "WARN " << Color::COLOR_NORMAL << "]";
+				ss << "[" << Color::COLOR_YELLOW << "WARN " << Color::COLOR_NORMAL << "]";
 				break;
 			case LEVEL_DEBUG:
-				*os << Color::COLOR_CYAN << "DEBUG" << Color::COLOR_NORMAL << "]";
+				ss << Color::COLOR_CYAN << "DEBUG" << Color::COLOR_NORMAL << "]";
 				break;
 			case LEVEL_INFO:
-				*os << Color::COLOR_GREEN << "INFO" << Color::COLOR_NORMAL << "]";
+				ss << Color::COLOR_GREEN << "INFO" << Color::COLOR_NORMAL << "]";
 				break;
 			default:
 				;
 		}
-		*os << "(" << file << ":" << line << ":" << func << ")";
+		ss << "(" << file << ":" << line << ":" << func << ")";
 	}
 }
 
@@ -52,15 +51,18 @@ void Logger::setStream(std::ostream& os){
 template<typename T>
 Logger& Logger::operator<<(const T& val){
 	if (currentLevel <= reportingLevel){
-		*os << val;
+		ss << val;
 	}
 }
 
 Logger::~Logger(){
 	if (currentLevel <= reportingLevel){
-		*os << std::endl;
+		ss << std::endl;
+
+		io_mutex.lock();
+		*os << ss.str();
+		io_mutex.unlock();
 	}
-	mutex.unlock();
 }
 
 }

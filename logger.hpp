@@ -10,7 +10,7 @@
 #define __CS_LOGGER_HPP
 
 #include <iostream>
-#include <mutex>
+#include <sstream>
 
 namespace CloudSync{
 
@@ -35,10 +35,10 @@ public:
 	template<typename T>
 	Logger& operator<<(const T& val);
 private:
+	std::stringstream ss;
 	LogLevel currentLevel;
 	static LogLevel reportingLevel;
 	static std::ostream* os;
-	static std::mutex mutex;
 };
 
 }

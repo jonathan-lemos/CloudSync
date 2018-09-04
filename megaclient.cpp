@@ -4,6 +4,28 @@
 
 namespace CloudSync{
 
+static std::string string_parent_dir(const char* in){
+	std::string ret = in;
+	size_t index;
+	index = ret.find_last_of('/');
+	if (index == std::string::npos){
+		return "";
+	}
+	ret.resize(index + 1);
+	return ret;
+}
+
+static std::string string_filename(const char* in){
+	std::string ret = in;
+	size_t index;
+	index = ret.find_last_of('/');
+	if (index == std::string::npos){
+		return "";
+	}
+	ret = in + index + 1;
+	return ret;
+}
+
 bool MegaClient::login(const char* username, const char* password){
 	mega::SynchronousRequestListener srl;
 
