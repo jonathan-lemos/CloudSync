@@ -1,0 +1,3 @@
+[submodule "mega_sdk"]
+	path = mega_sdk
+	url = https://github.com/meganz/sdk
