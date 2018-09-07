@@ -1,4 +1,4 @@
-/** @file io_mutex.hpp
+/** @file io_mutex.cpp
  * @brief Global mutex for IO thread-safety.
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *
@@ -6,11 +6,20 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
+#include <mutex>
+
 namespace CloudSync{
 namespace IO{
 
-	void lock();
-	void unlock();
+static std::mutex io_mutex;
+
+void lock(){
+	io_mutex.lock();
+}
+
+void unlock(){
+	io_mutex.unlock();
+}
 
 }
 }

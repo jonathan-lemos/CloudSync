@@ -16,7 +16,7 @@ namespace CloudSync{
 
 	class ProgressBar{
 	public:
-		ProgressBar(const char* msg, uint64_t max = 100, int intervalMillis = 500);
+		ProgressBar(const char* msg = "", uint64_t max = 100, int intervalMillis = 500);
 		~ProgressBar();
 		void display();
 		void incProgress(uint64_t amount);
@@ -26,6 +26,8 @@ namespace CloudSync{
 		ProgressBar& setInterval(int intervalMillis);
 		void finish();
 		void fail();
+		void reset();
+		bool isActive();
 	private:
 		void displayWorker();
 		void displayWait(int millis);

@@ -8,6 +8,7 @@
 
 #include "progressbar.hpp"
 #include "io_mutex.hpp"
+#include "terminal.hpp"
 #include <iostream>
 #include <iomanip>
 #include <chrono>
@@ -32,6 +33,7 @@ namespace CloudSync{
 	}
 
 	void ProgressBar::displayWorker(){
+		Terminal::ShowCursor(false);
 		while (true){
 			const size_t terminalWidth = getTerminalWidth();
 			const size_t usableWidth = terminalWidth - metaWidth - 1;
@@ -61,27 +63,31 @@ namespace CloudSync{
 			displayMsg.append(pctFormat.str());
 			displayMsg.append("]");
 
-			io_mutex.lock();
+			IO::lock();
 			std::cout << '\r' << displayMsg;
-			io_mutex.unlock();
+			IO::unlock();
 
 			if (curProgress == maxProgress){
 				displayWorkerThreadActive = false;
-				cvWaitMutex.notify_all();
+			}
+			if (!displayWorkerThreadActive){
 				break;
 			}
 			displayWait(interval);
 		}
+		Terminal::ShowCursor(true);
 	}
 
 	ProgressBar::ProgressBar(const char* msg, uint64_t max, int interval): interval(interval), msg(msg), maxProgress(max){}
 
 	ProgressBar::~ProgressBar(){
-		fail();
+		if (isActive()){
+			fail();
+		}
 	}
 
 	void ProgressBar::display(){
-		if (displayWorkerThreadActive){
+		if (isActive()){
 			return;
 		}
 		displayWorkerThread = std::thread(&ProgressBar::displayWorker, this);
@@ -122,6 +128,10 @@ namespace CloudSync{
 	}
 
 	void ProgressBar::finish(){
+		if (!isActive()){
+			return;
+		}
+
 		displayWorkerThreadActive = false;
 		cvWaitMutex.notify_all();
 
@@ -140,18 +150,32 @@ namespace CloudSync{
 		displayMsg.append(usableWidth - displayMsg.length(), ' ');
 		displayMsg.append("[100.0%]");
 
-		io_mutex.lock();
-		std::cout << '\r' << displayMsg;
-		std::cout << std::endl;
-		io_mutex.unlock();
+		IO::lock();
+		std::cout << '\r' << displayMsg << std::endl;
+		IO::unlock();
 	}
 
 	void ProgressBar::fail(){
+		if (!isActive()){
+			return;
+		}
+
 		displayWorkerThreadActive = false;
 		cvWaitMutex.notify_all();
 
-		io_mutex.lock();
+		IO::lock();
 		std::cout << std::endl;
-		io_mutex.unlock();
+		IO::unlock();
+	}
+
+	void ProgressBar::reset(){
+		if (isActive()){
+			fail();
+		}
+		curProgress = 0;
+	}
+
+	bool ProgressBar::isActive(){
+		return displayWorkerThreadActive;
 	}
 }

@@ -20,24 +20,57 @@
 
 namespace CloudSync{
 
-class MegaClient : BaseClient{
+enum MegaClientErrorCode{
+	NO_ERROR,
+	TIMED_OUT,
+	PATH_EXISTS,
+	INVALID_PATH,
+	IS_FILE,
+	IS_DIRECTORY,
+	PATH_NOT_FOUND,
+	REQUEST_ERROR,
+	TRANSFER_ERROR,
+	SHOULDNEVERHAPPEN_ERROR
+};
+
+class MegaClientError{
 public:
+	MegaClientError();
+	const char* toString();
+	MegaClientErrorCode getErrorCode();
+	const char* getApiError();
+	void setError(MegaClientErrorCode mcec, const char* apiError = nullptr);
+
+
+private:
+	enum MegaClientErrorCode mcec;
+	const char* apiError;
+};
+
+
+class MegaClient : public BaseClient{
+public:
+	~MegaClient();
 	bool login(const char* email, const char* password);
 	bool mkdir(const char* dir);
 	bool readdir(const char* dir, std::vector<std::string>& out);
 	bool stat(const char* path, struct stat* st);
-	bool rename(const char* old_path, const char* new_path);
-	bool upload(const char* disk_path, const char* cloud_path);
+	bool rename(const char* oldPath, const char* newPath);
+	bool download(const char* cloudPath, const char* diskPath);
+	bool upload(const char* diskPath, const char* cloudPath);
 	bool remove(const char* path);
 	bool logout();
 
 	const char* getLastError();
-
+	MegaClientErrorCode getLastErrorCode();
+	const char* getLastApiError();
+	void setUploadMsg(const char* msg);
+	void setDownloadMsg(const char* msg);
 private:
-	/* and you thought java was verbose */
-	static constexpr const char* const timedOutError = "Connection timed out";
-	std::unique_ptr<mega::MegaApi> mapi;
-	std::optional<std::string> lastError;
+	const char* uploadMsg = nullptr;
+	const char* downloadMsg = nullptr;
+	std::unique_ptr<mega::MegaApi> mapi = nullptr;
+	MegaClientError lastError;
 };
 
 }

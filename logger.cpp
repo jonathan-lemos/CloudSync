@@ -7,8 +7,8 @@
  */
 
 #include "logger.hpp"
-#include "color.hpp"
 #include "io_mutex.hpp"
+#include "terminal.hpp"
 
 namespace CloudSync{
 
@@ -18,23 +18,23 @@ Logger::Logger(LogLevel ll, const char* file, int line, const char* func){
 	currentLevel = ll;
 	if (currentLevel != LEVEL_NONE && currentLevel <= reportingLevel){
 		switch (currentLevel){
-			case LEVEL_FATAL:
-				ss << "[" << Color::COLOR_MAGENTA << "FATAL" << Color::COLOR_NORMAL << "]";
-				break;
-			case LEVEL_ERROR:
-				ss << "[" << Color::COLOR_RED << "ERROR" << Color::COLOR_NORMAL << "]";
-				break;
-			case LEVEL_WARNING:
-				ss << "[" << Color::COLOR_YELLOW << "WARN " << Color::COLOR_NORMAL << "]";
-				break;
-			case LEVEL_DEBUG:
-				ss << Color::COLOR_CYAN << "DEBUG" << Color::COLOR_NORMAL << "]";
-				break;
-			case LEVEL_INFO:
-				ss << Color::COLOR_GREEN << "INFO" << Color::COLOR_NORMAL << "]";
-				break;
-			default:
-				;
+		case LEVEL_FATAL:
+			ss << "[" << Terminal::Color(Terminal::MAGENTA) << "FATAL" << Terminal::Color(Terminal::NORMAL) << "]";
+			break;
+		case LEVEL_ERROR:
+			ss << "[" << Terminal::Color(Terminal::RED) << "ERROR" << Terminal::Color(Terminal::NORMAL) << "]";
+			break;
+		case LEVEL_WARNING:
+			ss << "[" << Terminal::Color(Terminal::YELLOW) << "WARN " << Terminal::Color(Terminal::NORMAL) << "]";
+			break;
+		case LEVEL_DEBUG:
+			ss << Terminal::Color(Terminal::CYAN) << "DEBUG" << Terminal::Color(Terminal::NORMAL) << "]";
+			break;
+		case LEVEL_INFO:
+			ss << Terminal::Color(Terminal::GREEN) << "INFO" << Terminal::Color(Terminal::NORMAL) << "]";
+			break;
+		default:
+			;
 		}
 		ss << "(" << file << ":" << line << ":" << func << ")";
 	}
@@ -59,9 +59,9 @@ Logger::~Logger(){
 	if (currentLevel <= reportingLevel){
 		ss << std::endl;
 
-		io_mutex.lock();
+		IO::lock();
 		*os << ss.str();
-		io_mutex.unlock();
+		IO::unlock();
 	}
 }
 
