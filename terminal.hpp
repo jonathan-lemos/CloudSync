@@ -28,6 +28,7 @@ namespace Terminal{
 	void ShowCursor(bool enabled);
 	size_t GetCols();
 	size_t GetRows();
+	const char* Invert(bool enabled);
 
 }
 }
