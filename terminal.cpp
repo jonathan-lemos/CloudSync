@@ -77,5 +77,14 @@ size_t GetRows(){
 	return w.ws_row;
 }
 
+const char* Invert(bool enabled){
+	if (enabled){
+		return "\033[7m";
+	}
+	else{
+		return "\033[27m";
+	}
+}
+
 }
 }

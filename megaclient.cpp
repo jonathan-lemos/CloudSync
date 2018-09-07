@@ -6,14 +6,14 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
-#include <sys/stat.h>
-#include <cstring>
 
 #include "megaclient.hpp"
 #include "keys.h"
 #include "logger.hpp"
 #include "progressbar.hpp"
 
+#include <sys/stat.h>
+#include <cstring>
 #include <unistd.h>
 
 namespace CloudSync{
@@ -204,7 +204,7 @@ bool MegaClient::login(const char* username, const char* password){
 		return false;
 	}
 
-	mapi = std::make_unique<mega::MegaApi>(MEGA_API_KEY, (const char*)NULL, "cloudsync");
+	mapi = std::make_unique<mega::MegaApi>(MEGA_API_KEY, nullptr, "cloudsync");
 
 	mapi->login(username, password, &srl);
 
