@@ -13,26 +13,27 @@
 #include <iomanip>
 #include <chrono>
 #include <cstring>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <sys/ioctl.h>
 #include <unistd.h>
 
 namespace CloudSync{
-	const size_t metaWidth = strlen("[100.0%]");
 
-	static size_t getTerminalWidth(){
-		struct winsize size;
-		ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
-		return size.ws_col;
-	}
+const size_t metaWidth = strlen("[100.0%]");
 
-	void ProgressBar::displayWait(int millis){
-		std::unique_lock<std::mutex>lock(waitMutex);
-		//wait until x milliseconds have passed or displayWorkerThreadActive is false
-		cvWaitMutex.wait_for(lock, std::chrono::milliseconds(millis), [this]{return !displayWorkerThreadActive;});
-	}
+static size_t getTerminalWidth(){
+	struct winsize size;
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &size);
+	return size.ws_col;
+}
 
-	void ProgressBar::displayWorker(){
+struct ProgressBarImpl{
+	ProgressBarImpl(const char* msg, uint64_t max, int intervalMillis): interval(intervalMillis), msg(msg), maxProgress(max){}
+
+	void displayWorker(){
 		Terminal::ShowCursor(false);
 		while (true){
 			const size_t terminalWidth = getTerminalWidth();
@@ -63,9 +64,9 @@ namespace CloudSync{
 			displayMsg.append(pctFormat.str());
 			displayMsg.append("]");
 
-			IO::lock();
+			IO::io_mutex.lock();
 			std::cout << '\r' << displayMsg;
-			IO::unlock();
+			IO::io_mutex.unlock();
 
 			if (curProgress == maxProgress){
 				displayWorkerThreadActive = false;
@@ -78,104 +79,122 @@ namespace CloudSync{
 		Terminal::ShowCursor(true);
 	}
 
-	ProgressBar::ProgressBar(const char* msg, uint64_t max, int interval): interval(interval), msg(msg), maxProgress(max){}
-
-	ProgressBar::~ProgressBar(){
-		if (isActive()){
-			fail();
-		}
+	void displayWait(int millis){
+		std::unique_lock<std::mutex>lock(waitMutex);
+		//wait until x milliseconds have passed or displayWorkerThreadActive is false
+		cvWaitMutex.wait_for(lock, std::chrono::milliseconds(millis), [this]{return !displayWorkerThreadActive;});
 	}
 
-	void ProgressBar::display(){
-		if (isActive()){
-			return;
-		}
-		displayWorkerThread = std::thread(&ProgressBar::displayWorker, this);
-		displayWorkerThreadActive = true;
+	std::thread displayWorkerThread;
+	bool displayWorkerThreadActive = false;
+	std::mutex dataMutex;
+	std::mutex waitMutex;
+	std::condition_variable cvWaitMutex;
+	int interval;
+	const char* msg = nullptr;
+	uint64_t curProgress;
+	uint64_t maxProgress;
+};
+
+ProgressBar::ProgressBar(const char* msg, uint64_t max, int interval): impl(std::make_unique<ProgressBarImpl>(msg, max, interval)){}
+
+ProgressBar::~ProgressBar(){
+	if (isActive()){
+		fail();
+	}
+}
+
+void ProgressBar::display(){
+	if (isActive()){
+		return;
+	}
+	impl->displayWorkerThread = std::thread(&ProgressBarImpl::displayWorker, this->impl.get());
+	impl->displayWorkerThreadActive = true;
+}
+
+void ProgressBar::incProgress(uint64_t amount){
+	impl->dataMutex.lock();
+	impl->curProgress += amount;
+	impl->dataMutex.unlock();
+}
+
+void ProgressBar::setProgress(uint64_t amount){
+	impl->dataMutex.lock();
+	impl->curProgress = amount;
+	impl->dataMutex.unlock();
+}
+
+ProgressBar& ProgressBar::setMsg(const char* msg){
+	impl->dataMutex.lock();
+	impl->msg = msg;
+	impl->dataMutex.unlock();
+	return *this;
+}
+
+ProgressBar& ProgressBar::setMax(uint64_t max){
+	impl->dataMutex.lock();
+	impl->maxProgress = max;
+	impl->dataMutex.unlock();
+	return *this;
+}
+
+ProgressBar& ProgressBar::setInterval(int intervalMillis){
+	impl->dataMutex.lock();
+	impl->interval = intervalMillis;
+	impl->dataMutex.unlock();
+	return *this;
+}
+
+void ProgressBar::finish(){
+	if (!isActive()){
+		return;
 	}
 
-	void ProgressBar::incProgress(uint64_t amount){
-		dataMutex.lock();
-		curProgress += amount;
-		dataMutex.unlock();
+	impl->displayWorkerThreadActive = false;
+	impl->cvWaitMutex.notify_all();
+
+	const size_t terminalWidth = getTerminalWidth();
+	const size_t usableWidth = terminalWidth - metaWidth - 1;
+	std::string displayMsg;
+
+	impl->dataMutex.lock();
+	displayMsg = impl->msg;
+	impl->dataMutex.unlock();
+
+	if (displayMsg.length() > usableWidth){
+		displayMsg.resize(usableWidth - 3);
+		displayMsg.append("...");
+	}
+	displayMsg.append(usableWidth - displayMsg.length(), ' ');
+	displayMsg.append("[100.0%]");
+
+	IO::io_mutex.lock();
+	std::cout << '\r' << displayMsg << std::endl;
+	IO::io_mutex.unlock();
+}
+
+void ProgressBar::fail(){
+	if (!isActive()){
+		return;
 	}
 
-	void ProgressBar::setProgress(uint64_t amount){
-		dataMutex.lock();
-		curProgress = amount;
-		dataMutex.unlock();
+	impl->displayWorkerThreadActive = false;
+	impl->cvWaitMutex.notify_all();
+
+	IO::io_mutex.lock();
+	std::cout << std::endl;
+	IO::io_mutex.unlock();
+}
+
+void ProgressBar::reset(){
+	if (isActive()){
+		fail();
 	}
+	impl->curProgress = 0;
+}
 
-	ProgressBar& ProgressBar::setMsg(const char* msg){
-		dataMutex.lock();
-		this->msg = msg;
-		dataMutex.unlock();
-		return *this;
-	}
+bool ProgressBar::isActive(){
+	return impl->displayWorkerThreadActive;
+}
 
-	ProgressBar& ProgressBar::setMax(uint64_t max){
-		dataMutex.lock();
-		maxProgress = max;
-		dataMutex.unlock();
-		return *this;
-	}
-
-	ProgressBar& ProgressBar::setInterval(int intervalMillis){
-		dataMutex.lock();
-		interval = intervalMillis;
-		dataMutex.unlock();
-		return *this;
-	}
-
-	void ProgressBar::finish(){
-		if (!isActive()){
-			return;
-		}
-
-		displayWorkerThreadActive = false;
-		cvWaitMutex.notify_all();
-
-		const size_t terminalWidth = getTerminalWidth();
-		const size_t usableWidth = terminalWidth - metaWidth - 1;
-		std::string displayMsg;
-
-		dataMutex.lock();
-		displayMsg = msg;
-		dataMutex.unlock();
-
-		if (displayMsg.length() > usableWidth){
-			displayMsg.resize(usableWidth - 3);
-			displayMsg.append("...");
-		}
-		displayMsg.append(usableWidth - displayMsg.length(), ' ');
-		displayMsg.append("[100.0%]");
-
-		IO::lock();
-		std::cout << '\r' << displayMsg << std::endl;
-		IO::unlock();
-	}
-
-	void ProgressBar::fail(){
-		if (!isActive()){
-			return;
-		}
-
-		displayWorkerThreadActive = false;
-		cvWaitMutex.notify_all();
-
-		IO::lock();
-		std::cout << std::endl;
-		IO::unlock();
-	}
-
-	void ProgressBar::reset(){
-		if (isActive()){
-			fail();
-		}
-		curProgress = 0;
-	}
-
-	bool ProgressBar::isActive(){
-		return displayWorkerThreadActive;
-	}
 }

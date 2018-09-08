@@ -6,11 +6,13 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
+#include <mutex>
+
 namespace CloudSync{
 namespace IO{
 
-	void lock();
-	void unlock();
+	/** Lock this mutex when using I/O functions to make sure other threads don't write at the same time. */
+	std::mutex io_mutex;
 
 }
 }

@@ -8,7 +8,7 @@
 
 #include "terminal.hpp"
 #include <iostream>
-
+#include <termios.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -33,36 +33,48 @@ const char* Color(ColorValue cv){
 		return "\033[36m";
 	case WHITE:
 		return "\033[37m";
-	case NORMAL:
-		return "\033[0m";
-	}
-}
-
-const char* BrightColor(ColorValue cv){
-	switch (cv){
-	case BLACK:
+	case BRIGHT_BLACK:
 		return "\033[90m";
-	case RED:
+	case BRIGHT_RED:
 		return "\033[91m";
-	case GREEN:
+	case BRIGHT_GREEN:
 		return "\033[92m";
-	case YELLOW:
+	case BRIGHT_YELLOW:
 		return "\033[93m";
-	case BLUE:
+	case BRIGHT_BLUE:
 		return "\033[94m";
-	case MAGENTA:
+	case BRIGHT_MAGENTA:
 		return "\033[95m";
-	case CYAN:
+	case BRIGHT_CYAN:
 		return "\033[96m";
-	case WHITE:
+	case BRIGHT_WHITE:
 		return "\033[97m";
 	case NORMAL:
 		return "\033[0m";
 	}
 }
 
+const char* Invert(bool enabled){
+	if (enabled){
+		return "\033[7m";
+	}
+	else{
+		return "\033[27m";
+	}
+}
+
 void ShowCursor(bool enable){
 	std::cout << (enable ? "\033[?25h" : "\033[?25l");
+}
+
+void MoveCursor(size_t x, size_t y){
+	x++;
+	y++;
+	std::cout << "\033[" << x << ";" << y << "H";
+}
+
+void Clear(){
+	std::cout << "\033[2J" << "\033[1;1H";
 }
 
 size_t GetCols(){
@@ -77,13 +89,36 @@ size_t GetRows(){
 	return w.ws_row;
 }
 
-const char* Invert(bool enabled){
-	if (enabled){
-		return "\033[7m";
-	}
-	else{
-		return "\033[27m";
-	}
+int getch(void){
+	struct termios t_old;
+	struct termios t_new;
+	int c;
+
+	tcgetattr(STDIN_FILENO, &t_old);
+	t_new = t_old;
+	t_new.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSANOW, &t_new);
+
+	do{
+		c = getchar();
+		if (c == '\033'){
+			getchar();
+			c = getchar();
+			tcsetattr(STDIN_FILENO, TCSANOW, &t_old);
+			switch (c){
+			case 'A':
+				return KEY_UP;
+			case 'B':
+				return KEY_DOWN;
+			case 'C':
+				return KEY_RIGHT;
+			case 'D':
+				return KEY_LEFT;
+			}
+		}
+	}while (c == EOF);
+	tcsetattr(STDIN_FILENO, TCSANOW, &old);
+	return c;
 }
 
 }

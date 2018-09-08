@@ -1,6 +1,6 @@
 /** @file cloud/keys.h
- *
- * Copyright (c) 2018 Jonathan Lemos
+ * @brief API Keys and sample logins
+ * @copyright Copyright (c) 2018 Jonathan Lemos
  *
  * This software may be modified and distributed under the terms
  * of the MIT license.  See the LICENSE file for details.
@@ -14,7 +14,7 @@
  */
 
 /**
- * @brief The MEGA API key to use.<br>
+ * The MEGA API key to use.<br>
  * You must generate your own MEGA API key for use with this program.<br>
  * You can create one <a href=https://mega.nz/sdk>here</a>.<br>
  * <br>
@@ -26,7 +26,7 @@
 extern const char* const MEGA_API_KEY;
 
 /**
- * @brief The MEGA sample username to use for testing purposes.<br>
+ * The MEGA sample username to use for testing purposes.<br>
  * You must generate your own MEGA account for use with this program.<br>
  * You can create one <a href=https://mega.nz/register>here</a>.<br>
  * <br>
@@ -38,7 +38,7 @@ extern const char* const MEGA_API_KEY;
 extern const char* const MEGA_SAMPLE_USERNAME;
 
 /**
- * @brief The MEGA sample password to use for testing purposes.<br>
+ * The MEGA sample password to use for testing purposes.<br>
  * You must generate your own MEGA account for use with this program.<br>
  * You can create one <a href=https://mega.nz/register>here</a>.<br>
  *

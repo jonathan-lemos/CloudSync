@@ -59,9 +59,9 @@ Logger::~Logger(){
 	if (currentLevel <= reportingLevel){
 		ss << std::endl;
 
-		IO::lock();
+		IO::io_mutex.lock();
 		*os << ss.str();
-		IO::unlock();
+		IO::io_mutex.unlock();
 	}
 }
 

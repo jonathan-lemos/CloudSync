@@ -7,12 +7,11 @@
  */
 
 #include <cstdint>
-#include <ctime>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
+#include <memory>
 
 namespace CloudSync{
+
+	struct ProgressBarImpl;
 
 	class ProgressBar{
 	public:
@@ -29,18 +28,7 @@ namespace CloudSync{
 		void reset();
 		bool isActive();
 	private:
-		void displayWorker();
-		void displayWait(int millis);
-
-		std::thread displayWorkerThread;
-		bool displayWorkerThreadActive = false;
-		std::mutex dataMutex;
-		std::mutex waitMutex;
-		std::condition_variable cvWaitMutex;
-		int interval;
-		const char* msg = nullptr;
-		uint64_t curProgress;
-		uint64_t maxProgress;
+		std::unique_ptr<ProgressBarImpl> impl;
 	};
 
 }
