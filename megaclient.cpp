@@ -6,7 +6,7 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
-
+#include "attribute.h"
 #include "megaclient.hpp"
 #include "keys.h"
 #include "logger.hpp"
@@ -15,58 +15,74 @@
 #include <sys/stat.h>
 #include <cstring>
 #include <unistd.h>
+#include <mutex>
+#include <condition_variable>
 
 namespace CloudSync{
 
-MegaClientError::MegaClientError(): mcec(NO_ERROR), apiError(nullptr){}
+class MegaClientError{
+public:
+	MegaClientError(): mcec(NO_ERROR), apiError(nullptr) {}
 
-const char* MegaClientError::toString(){
-	switch (mcec){
-	case NO_ERROR:
-		return nullptr;
-	case TIMED_OUT:
-		return "The request timed out";
-	case PATH_EXISTS:
-		return "The path already exists";
-	case INVALID_PATH:
-		return "The path was invalid";
-	case IS_FILE:
-		return "The path specifies a file";
-	case IS_DIRECTORY:
-		return "The path specifies a directory";
-	case PATH_NOT_FOUND:
-		return "The path does not exist";
-	case REQUEST_ERROR:
-		if (!apiError){
-			return "Unknown request error. This should never happen";
+	const char* toString(){
+		switch (mcec){
+		case NO_ERROR:
+			return nullptr;
+		case TIMED_OUT:
+			return "The request timed out";
+		case PATH_EXISTS:
+			return "The path already exists";
+		case INVALID_PATH:
+			return "The path was invalid";
+		case IS_FILE:
+			return "The path specifies a file";
+		case IS_DIRECTORY:
+			return "The path specifies a directory";
+		case PATH_NOT_FOUND:
+			return "The path does not exist";
+		case REQUEST_ERROR:
+			if (!apiError){
+				return "Unknown request error. This should never happen";
+			}
+			return std::string(std::string("Request error: ") + apiError).c_str();
+		case TRANSFER_ERROR:
+			if (!apiError){
+				return "Unknown transfer error. This should never happen";
+			}
+			return std::string(std::string("Transfer error: ") + apiError).c_str();
+		case SHOULDNEVERHAPPEN_ERROR:
+			return "This should never happen.";
 		}
-		return std::string(std::string("Request error: ") + apiError).c_str();
-	case TRANSFER_ERROR:
-		if (!apiError){
-			return "Unknown transfer error. This should never happen";
+	}
+
+	MegaClientErrorCode getErrorCode(){
+		return mcec;
+	}
+
+	const char* getApiError(){
+		return apiError;
+	}
+
+	void setError(MegaClientErrorCode mcec, const char* apiError = nullptr){
+		this->mcec = mcec;
+		if ((mcec == REQUEST_ERROR || mcec == TRANSFER_ERROR) &&
+				apiError == nullptr){
+			throw std::invalid_argument("mcec was REQUEST_ERROR or TRANSFER_ERROR, but apiError was not specified");
 		}
-		return std::string(std::string("Transfer error: ") + apiError).c_str();
-	case SHOULDNEVERHAPPEN_ERROR:
-		return "This should never happen.";
+		this->apiError = apiError;
 	}
-}
 
-MegaClientErrorCode MegaClientError::getErrorCode(){
-	return mcec;
-}
+private:
+	enum MegaClientErrorCode mcec;
+	const char* apiError;
+};
 
-const char* MegaClientError::getApiError(){
-	return apiError;
-}
-
-void MegaClientError::setError(MegaClientErrorCode mcec, const char* apiError){
-	this->mcec = mcec;
-	if ((mcec == REQUEST_ERROR || mcec == TRANSFER_ERROR) &&
-			apiError == nullptr){
-		throw std::invalid_argument("mcec was REQUEST_ERROR or TRANSFER_ERROR, but apiError was not specified");
-	}
-	this->apiError = apiError;
-}
+struct MegaClientImpl{
+	const char* uploadMsg = nullptr;
+	const char* downloadMsg = nullptr;
+	std::unique_ptr<mega::MegaApi> mapi = nullptr;
+	MegaClientError lastError;
+};
 
 class ProgressBarTransferListener : public mega::MegaTransferListener{
 public:
@@ -169,7 +185,7 @@ private:
 	MegaClientError err;
 };
 
-static std::optional<std::string> string_parent_dir(const char* in){
+static std::optional<std::string> CS_PURE string_parent_dir(const char* in){
 	std::string ret = in;
 	size_t index;
 	index = ret.find_last_of('/');
@@ -180,7 +196,7 @@ static std::optional<std::string> string_parent_dir(const char* in){
 	return ret;
 }
 
-static std::optional<std::string> string_filename(const char* in){
+static std::optional<std::string> CS_PURE string_filename(const char* in){
 	std::string ret = in;
 	size_t index;
 	index = ret.find_last_of('/');
@@ -192,7 +208,7 @@ static std::optional<std::string> string_filename(const char* in){
 }
 
 MegaClient::~MegaClient(){
-	if (mapi){
+	if (impl->mapi){
 		logout();
 	}
 }
@@ -200,31 +216,31 @@ MegaClient::~MegaClient(){
 bool MegaClient::login(const char* username, const char* password){
 	mega::SynchronousRequestListener srl;
 
-	if (mapi != nullptr){
+	if (impl->mapi != nullptr){
 		return false;
 	}
 
-	mapi = std::make_unique<mega::MegaApi>(MEGA_API_KEY, nullptr, "cloudsync");
+	impl->mapi = std::make_unique<mega::MegaApi>(MEGA_API_KEY, nullptr, "cloudsync");
 
-	mapi->login(username, password, &srl);
+	impl->mapi->login(username, password, &srl);
 
 	if (srl.trywait(MEGA_WAIT_MS) != 0){
-		lastError.setError(TIMED_OUT);
+		impl->lastError.setError(TIMED_OUT);
 		return false;
 	}
 	if (srl.getError()->getErrorCode() != mega::MegaError::API_OK){
-		lastError.setError(REQUEST_ERROR, srl.getError()->toString());
+		impl->lastError.setError(REQUEST_ERROR, srl.getError()->toString());
 		return false;
 	}
 
-	mapi->fetchNodes(&srl);
+	impl->mapi->fetchNodes(&srl);
 	if (srl.trywait(MEGA_WAIT_MS) != 0){
-		lastError.setError(TIMED_OUT);
+		impl->lastError.setError(TIMED_OUT);
 		return false;
 	}
 	if (srl.getError()->getErrorCode() != mega::MegaError::API_OK){
 		LOG(LEVEL_ERROR) << "MEGA: Failed to fetch nodes (" << srl.getError()->toString() << ")";
-		lastError.setError(REQUEST_ERROR, srl.getError()->toString());
+		impl->lastError.setError(REQUEST_ERROR, srl.getError()->toString());
 		return false;
 	}
 
@@ -237,74 +253,75 @@ bool MegaClient::mkdir(const char* dir){
 	std::unique_ptr<mega::MegaNode> node;
 	mega::SynchronousRequestListener srl;
 
-	node = std::unique_ptr<mega::MegaNode>(mapi->getNodeByPath(dir));
+	node = std::unique_ptr<mega::MegaNode>(impl->mapi->getNodeByPath(dir));
 	if (node){
-		lastError.setError(PATH_EXISTS);
+		impl->lastError.setError(PATH_EXISTS);
 		return false;
 	}
 
 	parent_path = string_parent_dir(dir);
 	if (!parent_path){
-		lastError.setError(INVALID_PATH);
+		impl->lastError.setError(INVALID_PATH);
 		return false;
 	}
 
 	filename = string_filename(dir);
 	if (!filename){
-		lastError.setError(INVALID_PATH);
+		impl->lastError.setError(INVALID_PATH);
 		return false;
 	}
 
-	node = std::unique_ptr<mega::MegaNode>(mapi->getNodeByPath(parent_path.value().c_str()));
+	node = std::unique_ptr<mega::MegaNode>(impl->mapi->getNodeByPath(parent_path.value().c_str()));
 	if (!node){
-		lastError.setError(PATH_NOT_FOUND);
+		impl->lastError.setError(PATH_NOT_FOUND);
 		return false;
 	}
 
 	if (node->isFile()){
-		lastError.setError(IS_FILE);
+		impl->lastError.setError(IS_FILE);
 		return false;
 	}
 
-	mapi->createFolder(filename.value().c_str(), node.get(), &srl);
+	impl->mapi->createFolder(filename.value().c_str(), node.get(), &srl);
 	if (srl.trywait(MEGA_WAIT_MS) != 0){
-		lastError.setError(TIMED_OUT);
+		impl->lastError.setError(TIMED_OUT);
 		return false;
 	}
 
 	if (srl.getError()->getErrorCode() != mega::MegaError::API_OK){
-		lastError.setError(REQUEST_ERROR, srl.getError()->toString());
+		impl->lastError.setError(REQUEST_ERROR, srl.getError()->toString());
 		return false;
 	}
 	return true;
 }
 
-bool MegaClient::readdir(const char* dir, std::vector<std::string>& out){
+std::optional<std::vector<std::string>> MegaClient::readdir(const char* dir){
+	std::vector<std::string> ret;
 	std::unique_ptr<mega::MegaNode> node;
 	std::unique_ptr<mega::MegaNodeList> children;
 
-	node = std::unique_ptr<mega::MegaNode>(mapi->getNodeByPath(dir));
+	node = std::unique_ptr<mega::MegaNode>(impl->mapi->getNodeByPath(dir));
 	if (!node){
-		lastError.setError(PATH_NOT_FOUND);
-		return false;
+		impl->lastError.setError(PATH_NOT_FOUND);
+		return std::nullopt;
 	}
 	if (node->isFile()){
-		lastError.setError(IS_FILE);
-		return false;
+		impl->lastError.setError(IS_FILE);
+		return std::nullopt;
 	}
 
-	children = std::unique_ptr<mega::MegaNodeList>(mapi->getChildren(node.get()));
+	children = std::unique_ptr<mega::MegaNodeList>(impl->mapi->getChildren(node.get()));
 	for (int i = 0; i < children->size(); ++i){
-		out.push_back(children->get(i)->getName());
+		ret.push_back(children->get(i)->getName());
 	}
-	return true;
+	return ret;
 }
 
 bool MegaClient::stat(const char* path, struct stat* st){
-	std::unique_ptr<mega::MegaNode> node(mapi->getNodeByPath(path));
+	std::unique_ptr<mega::MegaNode> node(impl->mapi->getNodeByPath(path));
 
 	if (!node){
-		lastError.setError(PATH_NOT_FOUND);
+		impl->lastError.setError(PATH_NOT_FOUND);
 		return false;
 	}
 	if (!st){
@@ -333,75 +350,74 @@ bool MegaClient::rename(const char* old_path, const char* new_path){
 		return true;
 	}
 
-	nSrc = std::unique_ptr<mega::MegaNode>(mapi->getNodeByPath(old_path));
+	nSrc = std::unique_ptr<mega::MegaNode>(impl->mapi->getNodeByPath(old_path));
 	if (!nSrc){
-		lastError.setError(PATH_NOT_FOUND);
+		impl->lastError.setError(PATH_NOT_FOUND);
 		return false;
 	}
 
-	nDst = std::unique_ptr<mega::MegaNode>(mapi->getNodeByPath(new_path));
+	nDst = std::unique_ptr<mega::MegaNode>(impl->mapi->getNodeByPath(new_path));
 	if (!nDst){
 		parent_path = string_parent_dir(new_path);
 		filename = string_filename(new_path);
 		if (!parent_path || !filename){
-			lastError.setError(INVALID_PATH);
+			impl->lastError.setError(INVALID_PATH);
 			return false;
 		}
 
-		nDst = std::unique_ptr<mega::MegaNode>(mapi->getNodeByPath(parent_path.value().c_str()));
+		nDst = std::unique_ptr<mega::MegaNode>(impl->mapi->getNodeByPath(parent_path.value().c_str()));
 		if (!nDst){
-			lastError.setError(PATH_NOT_FOUND);
+			impl->lastError.setError(PATH_NOT_FOUND);
 			return false;
 		}
 		if (nDst->isFile()){
-			lastError.setError(IS_FILE);
+			impl->lastError.setError(IS_FILE);
 			return false;
 		}
 
-		nTmp = std::unique_ptr<mega::MegaNode>(mapi->getChildNode(nDst.get(), filename.value().c_str()));
+		nTmp = std::unique_ptr<mega::MegaNode>(impl->mapi->getChildNode(nDst.get(), filename.value().c_str()));
 		if (nTmp){
-			lastError.setError(PATH_EXISTS);
+			impl->lastError.setError(PATH_EXISTS);
 			return false;
 		}
 	}
 	if (nDst->isFile()){
-		lastError.setError(PATH_EXISTS);
+		impl->lastError.setError(PATH_EXISTS);
 		return false;
 	}
 
-	mapi->moveNode(nSrc.get(), nDst.get(), &srl);
+	impl->mapi->moveNode(nSrc.get(), nDst.get(), &srl);
 	if (srl.trywait(MEGA_WAIT_MS) != 0){
-		lastError.setError(TIMED_OUT);
+		impl->lastError.setError(TIMED_OUT);
 		return false;
 	}
 	if (srl.getError()->getErrorCode() != mega::MegaError::API_OK){
-		lastError.setError(REQUEST_ERROR, srl.getError()->toString());
+		impl->lastError.setError(REQUEST_ERROR, srl.getError()->toString());
 		return false;
 	}
 
 	return true;
 }
 
-
 bool MegaClient::download(const char* cloud_path, const char* disk_path){
 	std::unique_ptr<mega::MegaNode> node;
 	ProgressBarTransferListener pbtl;
 
-	node = std::unique_ptr<mega::MegaNode>(mapi->getNodeByPath(cloud_path));
+	node = std::unique_ptr<mega::MegaNode>(impl->mapi->getNodeByPath(cloud_path));
 	if (!node){
-		lastError.setError(PATH_NOT_FOUND);
+		impl->lastError.setError(PATH_NOT_FOUND);
 		return false;
 	}
 	if (!node->isFile()){
-		lastError.setError(IS_DIRECTORY);
+		impl->lastError.setError(IS_DIRECTORY);
 		return false;
 	}
 
-	pbtl.setMsg(uploadMsg);
-	mapi->startDownload(node.get(), disk_path, &pbtl);
+	pbtl.setMsg(impl->uploadMsg);
+	impl->mapi->startDownload(node.get(), disk_path, &pbtl);
 	pbtl.wait();
 	if (pbtl.getError()->getErrorCode() != mega::MegaError::API_OK){
-		lastError.setError(TRANSFER_ERROR, pbtl.getError()->toString());
+		impl->lastError.setError(TRANSFER_ERROR, pbtl.getError()->toString());
 		return false;
 	}
 	return true;
@@ -412,26 +428,26 @@ bool MegaClient::upload(const char* disk_path, const char* cloud_path){
 	ProgressBarTransferListener pbtl;
 	std::optional<std::string> parent_dir;
 
-	node = std::unique_ptr<mega::MegaNode>(mapi->getNodeByPath(cloud_path));
+	node = std::unique_ptr<mega::MegaNode>(impl->mapi->getNodeByPath(cloud_path));
 	if (node && node->isFile()){
-		lastError.setError(PATH_EXISTS);
+		impl->lastError.setError(PATH_EXISTS);
 		return false;
 	}
 
 	if (!node){
 		parent_dir = string_parent_dir(cloud_path);
 		if (!parent_dir ||
-				!(node = std::unique_ptr<mega::MegaNode>(mapi->getNodeByPath(parent_dir.value().c_str())))){
-			lastError.setError(PATH_NOT_FOUND);
+				!(node = std::unique_ptr<mega::MegaNode>(impl->mapi->getNodeByPath(parent_dir.value().c_str())))){
+			impl->lastError.setError(PATH_NOT_FOUND);
 			return false;
 		}
 	}
 
-	pbtl.setMsg(downloadMsg);
-	mapi->startUpload(disk_path, node.get(), &pbtl);
+	pbtl.setMsg(impl->downloadMsg);
+	impl->mapi->startUpload(disk_path, node.get(), &pbtl);
 	pbtl.wait();
 	if (pbtl.getError()->getErrorCode() != mega::MegaError::API_OK){
-		lastError.setError(TRANSFER_ERROR, pbtl.getError()->toString());
+		impl->lastError.setError(TRANSFER_ERROR, pbtl.getError()->toString());
 		return false;
 	}
 
@@ -448,18 +464,18 @@ bool MegaClient::upload(const char* disk_path, const char* cloud_path){
 		f_old += string_filename(disk_path).value();
 		f_new += string_filename(cloud_path).value();
 
-		nUploaded = std::unique_ptr<mega::MegaNode>(mapi->getNodeByPath(f_old.c_str()));
+		nUploaded = std::unique_ptr<mega::MegaNode>(impl->mapi->getNodeByPath(f_old.c_str()));
 		if (!nUploaded){
-			lastError.setError(SHOULDNEVERHAPPEN_ERROR);
+			impl->lastError.setError(SHOULDNEVERHAPPEN_ERROR);
 			return false;
 		}
 
-		mapi->renameNode(nUploaded.get(), f_new.c_str(), &srl);
+		impl->mapi->renameNode(nUploaded.get(), f_new.c_str(), &srl);
 		if (srl.trywait(MEGA_WAIT_MS) != 0){
-			lastError.setError(TIMED_OUT);
+			impl->lastError.setError(TIMED_OUT);
 		}
 		if (srl.getError()->getErrorCode() != mega::MegaError::API_OK){
-			lastError.setError(REQUEST_ERROR, srl.getError()->toString());
+			impl->lastError.setError(REQUEST_ERROR, srl.getError()->toString());
 		}
 	}
 	return true;
@@ -469,18 +485,18 @@ bool MegaClient::remove(const char* path){
 	std::unique_ptr<mega::MegaNode> node;
 	mega::SynchronousRequestListener srl;
 
-	node = std::unique_ptr<mega::MegaNode>(mapi->getNodeByPath(path));
+	node = std::unique_ptr<mega::MegaNode>(impl->mapi->getNodeByPath(path));
 	if (!node){
-		lastError.setError(PATH_NOT_FOUND);
+		impl->lastError.setError(PATH_NOT_FOUND);
 	}
 
-	mapi->remove(node.get(), &srl);
+	impl->mapi->remove(node.get(), &srl);
 	if (srl.trywait(MEGA_WAIT_MS) != 0){
-		lastError.setError(TIMED_OUT);
+		impl->lastError.setError(TIMED_OUT);
 		return false;
 	}
 	if (srl.getError()->getErrorCode() != mega::MegaError::API_OK){
-		lastError.setError(REQUEST_ERROR, srl.getError()->toString());
+		impl->lastError.setError(REQUEST_ERROR, srl.getError()->toString());
 		return false;
 	}
 
@@ -491,40 +507,40 @@ bool MegaClient::logout(){
 	mega::SynchronousRequestListener srl;
 	int res;
 
-	if (mapi == nullptr){
+	if (impl->mapi == nullptr){
 		return true;
 	}
 
-	mapi->logout(&srl);
+	impl->mapi->logout(&srl);
 	res = srl.trywait(MEGA_WAIT_MS);
-	mapi = nullptr;
+	impl->mapi = nullptr;
 
 	if (res != 0){
-		lastError.setError(TIMED_OUT);
-		mapi = nullptr;
+		impl->lastError.setError(TIMED_OUT);
+		impl->mapi = nullptr;
 		return false;
 	}
 	return true;
 }
 
 const char* MegaClient::getLastError(){
-	return lastError.toString();
+	return impl->lastError.toString();
 }
 
 MegaClientErrorCode MegaClient::getLastErrorCode(){
-	return lastError.getErrorCode();
+	return impl->lastError.getErrorCode();
 }
 
 const char* MegaClient::getLastApiError(){
-	return lastError.getApiError();
+	return impl->lastError.getApiError();
 }
 
 void MegaClient::setUploadMsg(const char* msg){
-	this->uploadMsg = msg;
+	this->impl->uploadMsg = msg;
 }
 
 void MegaClient::setDownloadMsg(const char* msg){
-	this->downloadMsg = msg;
+	this->impl->downloadMsg = msg;
 }
 
 }

@@ -11,7 +11,9 @@
 namespace CloudSync{
 namespace IO{
 
-	/** Lock this mutex when using I/O functions to make sure other threads don't write at the same time. */
+	/**
+	  * @brief Lock this mutex when using I/O functions to make sure other threads don't write at the same time.
+	  */
 	std::mutex io_mutex;
 
 }

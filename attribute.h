@@ -57,7 +57,7 @@
  * A function marked with this attribute will always produce the same output given the same input.<br>
  * It also has no side effects and does not rely on global variables.
  */
-#define CS_PURE __attribute__((const))
+#define CS_PURE __attribute__((pure))
 
 /**
  * A function marked with this attribute is potentially unused.<br>

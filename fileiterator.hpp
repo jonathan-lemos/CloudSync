@@ -16,33 +16,32 @@ namespace CloudSync{
 struct FileIteratorImpl;
 
 /**
- * A class that recursively iterates though files in a directory.
+ * @brief A class that recursively iterates though files in a directory.
  */
 class FileIterator{
 public:
 	/**
-	 * Constructs a FileIterator class starting at the specified directory.
+	 * @brief Constructs a FileIterator class starting at the specified directory.
 	 *
 	 * @param baseDir The base directory to start iterating through.
 	 *
-	 * @exception std::runtime_error Could not open the specified directory (see what() for details)
+	 * @exception std::runtime_error Could not open the specified directory.
 	 */
 	FileIterator(const char* baseDir);
 
 	/**
-	 * Destructs a FileIterator
-	 */
-	~FileIterator();
-
-	/**
-	 * Returns the next entry in the directory, or nullptr if there are no more entries.
+	 * @brief Returns the next entry in the directory, or nullptr if there are no more entries.
 	 *
 	 * @exception std::runtime_error Failure to stat entry.
 	 *
 	 * @return The next entry in the directory, or nullptr if there are none.
 	 */
 	const char* nextEntry();
+
 private:
+	/**
+	 * @brief A pointer to the private variables and inner workings of the FileIterator class.
+	 */
 	std::unique_ptr<FileIteratorImpl> impl;
 };
 

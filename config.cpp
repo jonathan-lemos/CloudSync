@@ -39,7 +39,7 @@ public:
 
 			ifs.read((char*)&len, sizeof(len));
 			if (ifs.eof()){
-				throw std::runtime_error(std::string(filename) + " is not of the correct config file format.");
+				throw std::invalid_argument(std::string(filename) + " is not of the correct config file format.");
 			}
 			vec.resize(len);
 			ifs.read((char*)&(vec[0]), len);
@@ -50,9 +50,13 @@ public:
 		if (ifs.fail()){
 			throw std::runtime_error("Read error");
 		}
+
+		std::sort(readVec.begin(), readVec.end(), [](const auto& elem1, const auto& elem2){
+				return elem1.first().compare(elem2.first()) < 0;
+				});
 	}
 
-	std::optional<std::reference_wrapper<const std::vector<unsigned char>>> readEntry(std::string key){
+	std::optional<std::reference_wrapper<const std::vector<unsigned char>>> CS_PURE readEntry(std::string key){
 		size_t left = 0;
 		size_t right = readVec.size();
 		while (left <= right){

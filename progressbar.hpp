@@ -11,24 +11,24 @@
 
 namespace CloudSync{
 
-	struct ProgressBarImpl;
+struct ProgressBarImpl;
 
-	class ProgressBar{
-	public:
-		ProgressBar(const char* msg = "", uint64_t max = 100, int intervalMillis = 500);
-		~ProgressBar();
-		void display();
-		void incProgress(uint64_t amount);
-		void setProgress(uint64_t amount);
-		ProgressBar& setMsg(const char* msg);
-		ProgressBar& setMax(uint64_t max);
-		ProgressBar& setInterval(int intervalMillis);
-		void finish();
-		void fail();
-		void reset();
-		bool isActive();
-	private:
-		std::unique_ptr<ProgressBarImpl> impl;
-	};
+class ProgressBar{
+public:
+	ProgressBar(const char* msg = "", uint64_t max = 100, int intervalMillis = 500);
+	~ProgressBar();
+	void display();
+	void incProgress(uint64_t amount);
+	void setProgress(uint64_t amount);
+	ProgressBar& setMsg(const char* msg);
+	ProgressBar& setMax(uint64_t max);
+	ProgressBar& setInterval(int intervalMillis);
+	void finish();
+	void fail();
+	void reset();
+	bool isActive();
+private:
+	std::unique_ptr<ProgressBarImpl> impl;
+};
 
 }

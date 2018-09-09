@@ -1,5 +1,5 @@
 /** @file baseclient.hpp
- * @brief Base client class that needs to be implemented.
+ * @brief Base client class used to connect to a cloud service.
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *
  * This software may be modified and distributed under the terms
@@ -17,22 +17,21 @@
 namespace CloudSync{
 
 /**
- * Cloud client abstract superclass.<br>
- * This is used to connect to a cloud service.<br>
+ * @brief Cloud client abstract superclass.
+ * This is used to connect to a cloud service.
  * Do not instantiate the BaseClient directly; use one of its subclasses.
  */
 class BaseClient{
 	public:
 		/**
-		 * The destructor must be virtual to prevent memory leaks when deleting a subclass from a base pointer. Thanks C++...
+		 * @brief The destructor must be virtual to prevent memory leaks when deleting a subclass from a base pointer. Thanks C++...
 		 */
 		virtual ~BaseClient() = 0;
 
 		/**
-		 * Logs into the cloud service.
+		 * @brief Logs into the cloud service.
 		 *
 		 * @param username The username/email to log into.
-		 *
 		 * @param password The password to log in with.
 		 *
 		 * @return True if the login was successful, false if not.
@@ -40,7 +39,7 @@ class BaseClient{
 		virtual bool login(const char* username, const char* password) = 0;
 
 		/**
-		 * Creates a directory.
+		 * @brief Creates a directory.
 		 *
 		 * @param dir The directory to create.
 		 *
@@ -49,7 +48,7 @@ class BaseClient{
 		virtual bool mkdir(const char* dir) = 0;
 
 		/**
-		 * Lists all the filenames in a directory.
+		 * @brief Lists all the filenames in a directory.
 		 *
 		 * @param dir The directory to list.
 		 *
@@ -58,7 +57,7 @@ class BaseClient{
 		virtual std::optional<std::vector<std::string>> readdir(const char* dir) = 0;
 
 		/**
-		 * Stats a directory/file in a cloud directory.
+		 * @brief Stats a directory/file.
 		 *
 		 * @param dir The directory/file to stat.
 		 *
@@ -69,7 +68,7 @@ class BaseClient{
 		virtual bool stat(const char* path, struct stat* st) = 0;
 
 		/**
-		 * Moves a file in a cloud directory.
+		 * @brief Moves a file.
 		 *
 		 * @param old_path The old path of the file.
 		 *
@@ -80,7 +79,7 @@ class BaseClient{
 		virtual bool move(const char* old_path, const char* new_path) = 0;
 
 		/**
-		 * Downloads a file from the cloud.
+		 * @brief Downloads a file.
 		 *
 		 * @param cloud_path The file to be downloaded.
 		 *
@@ -91,7 +90,7 @@ class BaseClient{
 		virtual bool download(const char* cloud_path, const char* disk_path) = 0;
 
 		/**
-		 * Uploads a file to the cloud.
+		 * @brief Uploads a file.
 		 *
 		 * @param disk_path The file to be uploaded.
 		 *
@@ -102,7 +101,7 @@ class BaseClient{
 		virtual bool upload(const char* disk_path, const char* cloud_path) = 0;
 
 		/**
-		 * Removes a file or empty directory from the cloud.
+		 * @brief Removes a file or empty directory from the cloud.
 		 *
 		 * @param path The path of the file or directory that should be removed.
 		 *
@@ -111,7 +110,7 @@ class BaseClient{
 		virtual bool remove(const char* path) = 0;
 
 		/**
-		 * Logs out of the cloud service.
+		 * @brief Logs out of the cloud service.
 		 *
 		 * @return True if the logout was successful, false if not.
 		 */

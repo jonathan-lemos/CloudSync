@@ -20,6 +20,10 @@
 
 namespace CloudSync{
 
+/**
+ * @brief An error code from the MegaClient.
+ * In most cases you should just use MegaClient::getLastError.
+ */
 enum MegaClientErrorCode{
 	NO_ERROR,
 	TIMED_OUT,
@@ -33,27 +37,14 @@ enum MegaClientErrorCode{
 	SHOULDNEVERHAPPEN_ERROR
 };
 
-class MegaClientError{
-public:
-	MegaClientError();
-	const char* toString();
-	MegaClientErrorCode getErrorCode();
-	const char* getApiError();
-	void setError(MegaClientErrorCode mcec, const char* apiError = nullptr);
-
-
-private:
-	enum MegaClientErrorCode mcec;
-	const char* apiError;
-};
-
+struct MegaClientImpl;
 
 class MegaClient : public BaseClient{
 public:
 	~MegaClient();
 	bool login(const char* email, const char* password);
 	bool mkdir(const char* dir);
-	bool readdir(const char* dir, std::vector<std::string>& out);
+	std::optional<std::vector<std::string>> readdir(const char* dir);
 	bool stat(const char* path, struct stat* st);
 	bool rename(const char* oldPath, const char* newPath);
 	bool download(const char* cloudPath, const char* diskPath);
@@ -67,10 +58,7 @@ public:
 	void setUploadMsg(const char* msg);
 	void setDownloadMsg(const char* msg);
 private:
-	const char* uploadMsg = nullptr;
-	const char* downloadMsg = nullptr;
-	std::unique_ptr<mega::MegaApi> mapi = nullptr;
-	MegaClientError lastError;
+	std::unique_ptr<MegaClientImpl> impl;
 };
 
 }
