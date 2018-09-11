@@ -14,7 +14,6 @@
 #endif
 
 #include "baseclient.hpp"
-#include "mega_sdk/include/megaapi.h"
 #include <optional>
 #include <memory>
 
@@ -37,11 +36,10 @@ enum MegaClientErrorCode{
 	SHOULDNEVERHAPPEN_ERROR
 };
 
-struct MegaClientImpl;
-
 class MegaClient : public BaseClient{
 public:
 	~MegaClient();
+
 	bool login(const char* email, const char* password);
 	bool mkdir(const char* dir);
 	std::optional<std::vector<std::string>> readdir(const char* dir);
@@ -58,6 +56,7 @@ public:
 	void setUploadMsg(const char* msg);
 	void setDownloadMsg(const char* msg);
 private:
+	struct MegaClientImpl;
 	std::unique_ptr<MegaClientImpl> impl;
 };
 

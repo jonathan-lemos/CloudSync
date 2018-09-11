@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <mutex>
 
 namespace CloudSync{
 
@@ -75,7 +76,14 @@ public:
 	 * @brief The '<<' operator is used just like std::cout's '<<' operator.
 	 */
 	template<typename T>
-	Logger& operator<<(const T& val);
+	Logger& operator<<(const T& val){
+		// the definition has to be in the header file because C++'s linker is bogus and can't find the implementation for a template
+		std::unique_lock<std::mutex> lock(loggerStateMutex);
+		if (currentLevel <= reportingLevel){
+			ss << val;
+		}
+		return *this;
+	}
 
 private:
 	/**
@@ -100,6 +108,11 @@ private:
 	 * This is set to std::cerr by default.
 	 */
 	static std::ostream* os;
+
+	/**
+	 * @brief Locks the static variables of the Logger
+	 */
+	static std::mutex loggerStateMutex;
 };
 
 }

@@ -9,15 +9,15 @@
 #include "logger.hpp"
 #include "io_mutex.hpp"
 #include "terminal.hpp"
-#include <mutex>
 
 namespace CloudSync{
 
 std::ostream* Logger::os = &(std::cerr);
-std::mutex loggerStateMutex;
+LogLevel Logger::reportingLevel = LEVEL_WARNING;
+std::mutex Logger::loggerStateMutex;
 
 Logger::Logger(LogLevel ll, const char* file, int line, const char* func){
-	std::unique_lock lock(loggerStateMutex);
+	std::unique_lock<std::mutex> lock(loggerStateMutex);
 	currentLevel = ll;
 	if (currentLevel != LEVEL_NONE && currentLevel <= reportingLevel){
 		switch (currentLevel){
@@ -31,38 +31,30 @@ Logger::Logger(LogLevel ll, const char* file, int line, const char* func){
 			ss << "[" << Terminal::Color(Terminal::YELLOW) << "WARN " << Terminal::Color(Terminal::NORMAL) << "]";
 			break;
 		case LEVEL_DEBUG:
-			ss << Terminal::Color(Terminal::CYAN) << "DEBUG" << Terminal::Color(Terminal::NORMAL) << "]";
+			ss << "[" << Terminal::Color(Terminal::CYAN) << "DEBUG" << Terminal::Color(Terminal::NORMAL) << "]";
 			break;
 		case LEVEL_INFO:
-			ss << Terminal::Color(Terminal::GREEN) << "INFO" << Terminal::Color(Terminal::NORMAL) << "]";
+			ss << "[" << Terminal::Color(Terminal::GREEN) << "INFO " << Terminal::Color(Terminal::NORMAL) << "]";
 			break;
 		default:
 			;
 		}
-		ss << "(" << file << ":" << line << ":" << func << ")";
+		ss << "(" << file << ":" << line << ":" << func << "):";
 	}
 }
 
 void Logger::setLevel(LogLevel ll){
-	std::unique_lock lock(loggerStateMutex);
+	std::unique_lock<std::mutex> lock(loggerStateMutex);
 	reportingLevel = ll;
 }
 
 void Logger::setStream(std::ostream& os){
-	std::unique_lock lock(loggerStateMutex);
+	std::unique_lock<std::mutex> lock(loggerStateMutex);
 	Logger::os = &os;
 }
 
-template<typename T>
-Logger& Logger::operator<<(const T& val){
-	std::unique_lock lock(loggerStateMutex);
-	if (currentLevel <= reportingLevel){
-		ss << val;
-	}
-}
-
 Logger::~Logger(){
-	std::unique_lock lock(loggerStateMutex);
+	std::unique_lock<std::mutex> lock(loggerStateMutex);
 	if (currentLevel <= reportingLevel){
 		ss << std::endl;
 

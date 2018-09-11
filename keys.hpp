@@ -1,4 +1,4 @@
-/** @file cloud/keys.h
+/** @file cloud/keys.hpp
  * @brief API Keys and sample logins
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *
@@ -10,7 +10,7 @@
 #define __KEYS_H
 
 /*
- * You must create a file called "keys.c" that defines the following constants.
+ * You must create a file called "keys.cpp" that defines the following constants.
  */
 
 /**
@@ -18,7 +18,7 @@
  * You must generate your own MEGA API key for use with this program.<br>
  * You can create one <a href=https://mega.nz/sdk>here</a>.<br>
  * <br>
- * Once this is done, create a file called "keys.c" that defines this constant like so:<br>
+ * Once this is done, create a file called "keys.cpp" that defines this constant like so:<br>
  * ```C
  * const char* const MEGA_API_KEY = "ABCDEFGH";
  * ```
@@ -30,7 +30,7 @@ extern const char* const MEGA_API_KEY;
  * You must generate your own MEGA account for use with this program.<br>
  * You can create one <a href=https://mega.nz/register>here</a>.<br>
  * <br>
- * Once this is done, create a file called "keys.c" that defines this constant like so:<br>
+ * Once this is done, create a file called "keys.cpp" that defines this constant like so:<br>
  * ```C
  * const char* const MEGA_SAMPLE_USERNAME = "johndoe@example.com";
  * ```
@@ -42,7 +42,7 @@ extern const char* const MEGA_SAMPLE_USERNAME;
  * You must generate your own MEGA account for use with this program.<br>
  * You can create one <a href=https://mega.nz/register>here</a>.<br>
  *
- * Once this is done, create a file called "keys.c" that defines this constant like so:<br>
+ * Once this is done, create a file called "keys.cpp" that defines this constant like so:<br>
  * ```C
  * const char* const MEGA_SAMPLE_PASSWORD = "hunter2";
  * ```

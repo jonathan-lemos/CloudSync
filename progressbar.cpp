@@ -30,7 +30,7 @@ static size_t getTerminalWidth(){
 	return size.ws_col;
 }
 
-struct ProgressBarImpl{
+struct ProgressBar::ProgressBarImpl{
 	ProgressBarImpl(const char* msg, uint64_t max, int intervalMillis): interval(intervalMillis), msg(msg), maxProgress(max){}
 
 	void displayWorker(){

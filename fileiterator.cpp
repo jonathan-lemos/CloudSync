@@ -42,7 +42,7 @@ DirEntry::~DirEntry(){
 	}
 }
 
-struct FileIteratorImpl{
+struct FileIterator::FileIteratorImpl{
 	std::stack<DirEntry> dirStack;
 	std::mutex m;
 };

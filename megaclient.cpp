@@ -6,11 +6,12 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
-#include "attribute.h"
+#include "attribute.hpp"
 #include "megaclient.hpp"
-#include "keys.h"
+#include "keys.hpp"
 #include "logger.hpp"
 #include "progressbar.hpp"
+#include "sdk/mega_sdk/include/megaapi.h"
 
 #include <sys/stat.h>
 #include <cstring>
@@ -77,7 +78,7 @@ private:
 	const char* apiError;
 };
 
-struct MegaClientImpl{
+struct MegaClient::MegaClientImpl{
 	const char* uploadMsg = nullptr;
 	const char* downloadMsg = nullptr;
 	std::unique_ptr<mega::MegaApi> mapi = nullptr;

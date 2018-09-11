@@ -6,15 +6,17 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
-#include "attribute.h"
+#ifndef __CONFIG_HPP
+#define __CONFIG_HPP
+
+#include "attribute.hpp"
 #include <vector>
 #include <string>
 #include <optional>
 #include <memory>
 
-namespace CloudSync{
 
-struct ConfigFileImpl;
+namespace CloudSync{
 
 /**
  * @brief Writes/reads to/from a config file.
@@ -43,7 +45,7 @@ public:
 	 *
 	 * @exception std::runtime_error Failed to open the specified file.
 	 */
-	static ConfigFile openForWriting(const char* filename);
+	void openForWriting(const char* filename);
 
 	/**
 	 * @brief Closes the internal fstream.
@@ -78,6 +80,8 @@ public:
 	 */
 	std::optional<std::reference_wrapper<const std::vector<unsigned char>>> CS_PURE readEntry(std::string key);
 
+	friend void swap(ConfigFile& first, ConfigFile& second);
+
 private:
 	/**
 	 * @brief Do not instantiate ConfigFile classes directly.
@@ -85,6 +89,7 @@ private:
 	 */
 	ConfigFile();
 
+	struct ConfigFileImpl;
 	/**
 	 * @brief A pointer to the private variables and inner workings of the ConfigFile class.
 	 */
@@ -92,3 +97,5 @@ private:
 };
 
 }
+
+#endif

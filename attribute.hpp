@@ -1,4 +1,4 @@
-/** @file attribute.h
+/** @file attribute.hpp
  * @brief gcc optimization attributes.
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *
@@ -17,6 +17,13 @@
  * A function marked with this attribute is unlikely to be executed, so it is optimized for space instead of speed.
  */
 #define CS_COLD __attribute__((cold))
+
+/**
+ * A function marked with this attribute will always produce the same output given the same input.<br>
+ * It also has no side effects and does not rely on global variables.
+ */
+#define CS_CONST __attribute__((const))
+
 
 /**
  * A function or variable marked with this attribute is deprecated and a warning is given if it is used.
@@ -55,7 +62,7 @@
 
 /**
  * A function marked with this attribute will always produce the same output given the same input.<br>
- * It also has no side effects and does not rely on global variables.
+ * It also has no side effects.
  */
 #define CS_PURE __attribute__((pure))
 

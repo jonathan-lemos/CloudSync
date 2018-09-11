@@ -13,8 +13,6 @@
 
 namespace CloudSync{
 
-struct FileIteratorImpl;
-
 /**
  * @brief A class that recursively iterates though files in a directory.
  */
@@ -39,6 +37,7 @@ public:
 	const char* nextEntry();
 
 private:
+	struct FileIteratorImpl;
 	/**
 	 * @brief A pointer to the private variables and inner workings of the FileIterator class.
 	 */

@@ -15,7 +15,15 @@
 namespace CloudSync{
 namespace Terminal{
 
-const char* Color(ColorValue cv){
+static bool CS_CONST is_tty(){
+	return !(!isatty(STDOUT_FILENO) && errno == ENOTTY);
+}
+
+const char* CS_CONST Color(ColorValue cv){
+	if (!is_tty()){
+		return "";
+	}
+
 	switch (cv){
 	case BLACK:
 		return "\033[30m";
@@ -52,6 +60,7 @@ const char* Color(ColorValue cv){
 	case NORMAL:
 		return "\033[0m";
 	}
+	return nullptr;
 }
 
 const char* Invert(bool enabled){
@@ -67,10 +76,10 @@ void ShowCursor(bool enable){
 	std::cout << (enable ? "\033[?25h" : "\033[?25l");
 }
 
-void MoveCursor(size_t x, size_t y){
-	x++;
-	y++;
-	std::cout << "\033[" << x << ";" << y << "H";
+void MoveCursor(size_t row, size_t col){
+	row++;
+	col++;
+	std::cout << "\033[" << row << ";" << col << "H";
 }
 
 void Clear(){
@@ -117,7 +126,7 @@ int getch(void){
 			}
 		}
 	}while (c == EOF);
-	tcsetattr(STDIN_FILENO, TCSANOW, &old);
+	tcsetattr(STDIN_FILENO, TCSANOW, &t_old);
 	return c;
 }
 

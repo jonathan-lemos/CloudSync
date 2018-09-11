@@ -7,7 +7,6 @@
  */
 
 #include "config.hpp"
-#include <stdexcept>
 #include <tuple>
 #include <algorithm>
 #include <fstream>
@@ -109,7 +108,7 @@ private:
 	std::vector<std::tuple<std::string, void*, size_t>> writeVec;
 };
 
-struct ConfigFileImpl{
+struct ConfigFile::ConfigFileImpl{
 	bool writing;
 	union{
 		ReadingConfigFile rcf;
@@ -132,6 +131,10 @@ std::optional<std::reference_wrapper<const std::vector<unsigned char>>> ConfigFi
 		throw std::logic_error("ConfigFile is opened in writing mode, but readEntry() was called.");
 	}
 	return impl->rcf.readEntry(key);
+}
+
+void swap(ConfigFile& first, ConfigFile& second){
+	std::swap(first.impl, second.impl);
 }
 
 ConfigFile::~ConfigFile(){
