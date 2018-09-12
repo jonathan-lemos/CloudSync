@@ -57,8 +57,10 @@
  * ```
  *
  * @param index The index of the printf format string.
+ * This value is zero-indexed.
+ * For member functions, the implicit 'this' argument is the first one.
  */
-#define CS_PRINTF_LIKE(index) __attribute__((format(printf,index,index + 1)))
+#define CS_PRINTF_LIKE(index) __attribute__((format(printf,index + 1,index + 2)))
 
 /**
  * A function marked with this attribute will always produce the same output given the same input.<br>
