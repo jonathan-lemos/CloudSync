@@ -9,6 +9,9 @@
 #include "attribute.hpp"
 #include <cstddef>
 
+#ifndef __CS_TERMINAL_HPP
+#define __CS_TERMINAL_HPP
+
 namespace CloudSync{
 namespace Terminal{
 
@@ -110,3 +113,5 @@ int getch();
 
 }
 }
+
+#endif

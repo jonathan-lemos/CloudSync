@@ -23,6 +23,9 @@ namespace CloudSync{
  */
 class ConfigFile{
 public:
+	ConfigFile(ConfigFile& other);
+
+	ConfigFile& operator=(ConfigFile& other);
 	/**
 	 * @brief Opens a config file for reading and reads all of its entries.
 	 *
@@ -45,7 +48,7 @@ public:
 	 *
 	 * @exception std::runtime_error Failed to open the specified file.
 	 */
-	void openForWriting(const char* filename);
+	static ConfigFile openForWriting(const char* filename);
 
 	/**
 	 * @brief Closes the internal fstream.

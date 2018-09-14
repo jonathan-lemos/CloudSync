@@ -6,6 +6,9 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
+#ifndef __CS_CSTEST_IOCAPTURER_HPP
+#define __CS_CSTEST_IOCAPTURER_HPP
+
 #include "../../attribute.hpp"
 #include <memory>
 #include <string>
@@ -45,6 +48,11 @@ public:
 	std::string getStderr();
 
 	/**
+	 * @brief Returns the last line of getStdout()/getStderr()
+	 */
+	static std::string getLastLine(std::string input);
+
+	/**
 	 * @brief Sends a line to stdin.
 	 *
 	 * @param line The line you want to send.
@@ -71,3 +79,5 @@ private:
 
 }
 }
+
+#endif

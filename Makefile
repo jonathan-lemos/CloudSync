@@ -1,4 +1,4 @@
-# makefile
+# Makefile
 #
 # Copyright (c) 2018 Jonathan Lemos
 #
@@ -10,22 +10,26 @@ VERSION=0.1\ beta
 SHELL=/bin/sh
 
 CXX:=g++
-CXXFLAGS:=-Wall -Wextra -pedantic -std=c++17 -DPROG_NAME=\"$(NAME)\" -DPROG_VERSION=\"$(VERSION)\"
-CXXDBGFLAGS:=-g -fsanitize=address -fno-omit-frame-pointer
-CXXRELEASEFLAGS:=-O2
+CXXFLAGS:=-Wall -Wextra -pedantic -std=c++17 -DPROG_NAME=\"$(NAME)\" -DPROG_VERSION=\"$(VERSION)\" -pthread
+DBGFLAGS:=-g
+RELEASEFLAGS:=-O2
 LDFLAGS=-lmega
 
 DIRECTORIES=$(shell find . -type d 2>/dev/null | sed -re 's|^.*\.git.*$$||;s|.*/sdk.*$$||;s|^.*/tests.*$$||' | awk 'NF')
-FILES=$(foreach directory,$(DIRECTORIES),$(shell ls $(directory) | egrep '^.*\.cpp$$' | sed -re 's|^.*main.cpp$$||;s|^(.+)\.cpp$$|\1|'))
-TESTS=$(shell find tests -type f -name '*.cpp' 2>/dev/null | sed -re 's|^(.+)cstest/$$||;s|^(.+)\.cpp$$|\1|')
-FRAMEWORKFILES=$(shell ls tests/cstest | sed -re 's|^(.+)\.cpp$$|\1|')
+FILES=$(foreach directory,$(DIRECTORIES),$(shell ls $(directory) | egrep '^.*\.cpp$$' | sed -re 's|^.*main.cpp$$||;s|^(.+)\.cpp$$|\1|' | awk 'NF'))
+TESTS=$(shell find tests -type f -name '*.cpp' 2>/dev/null | sed -re 's|^.*cstest/.*$$||;s|^(.+)\.cpp$$|\1|' | awk 'NF')
+FRAMEWORKFILES=$(shell ls tests/cstest | egrep '^.*\.cpp$$' | sed -re 's|^(.+)\.cpp$$|\1|' | awk 'NF')
 
 SOURCEFILES=$(foreach file,$(FILES),$(file).cpp)
 OBJECTS=$(foreach file,$(FILES),$(file).o)
 DBGOBJECTS=$(foreach file,$(FILES),$(file).dbg.o)
 TESTOBJECTS=$(foreach test,$(TESTS),$(test).dbg.o)
 TESTEXECS=$(foreach test,$(TESTS),$(test).x)
-FRAMEWORKOBJECTS=$(foreach frameworkfile,$(FRAMEWORKFILES),$(frameworkfile).dbg.o)
+FRAMEWORKOBJECTS=$(foreach frameworkfile,$(FRAMEWORKFILES),tests/cstest/$(frameworkfile).dbg.o)
+
+.PHONY: q
+q:
+	@echo $(TESTEXECS)
 
 release: main.o $(OBJECTS)
 	$(CC) -o $(NAME) main.o $(OBJECTS) $(CXXFLAGS) $(LDFLAGS) $(RELEASEFLAGS)
@@ -37,17 +41,17 @@ debug: main.dbg.o $(DBGOBJECTS)
 docs:
 	doxygen Doxyfile
 
-test: $(TESTEXECS)
+test: $(TESTEXECS) $(FRAMEWORKOBJECTS) $(TESTOBJECTS)
 	@echo "Made all tests"
 
-%.x: $(DBGOBJECTS) $(FRAMEWORKOBJECTS)
+%.x: %.dbg.o $(DBGOBJECTS) $(FRAMEWORKOBJECTS)
 	$(CXX) -o $@ $< $(FRAMEWORKOBJECTS) $(DBGOBJECTS) $(CXXFLAGS) $(DBGFLAGS) $(LDFLAGS)
 
 %.o: %.cpp
-	$(CXX) -c -o $@ $< $(CFLAGS) $(RELEASEFLAGS)
+	$(CXX) -c -o $@ $< $(CXXFLAGS) $(RELEASEFLAGS)
 
 %.dbg.o: %.cpp
-	$(CXX) -c -o $@ $< $(CFLAGS) $(DBGFLAGS)
+	$(CXX) -c -o $@ $< $(CXXFLAGS) $(DBGFLAGS)
 
 .PHONY: clean
 clean:

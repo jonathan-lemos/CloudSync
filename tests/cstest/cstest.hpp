@@ -6,6 +6,9 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
+#ifndef __CS_CSTEST_HPP
+#define __CS_CSTEST_HPP
+
 #include "cstest_iocapturer.hpp"
 #include <vector>
 #include <stdexcept>
@@ -17,9 +20,9 @@ namespace Testing{
  * @brief Do not throw this exception directly. Use the ASSERT() macro instead.
  * This exception indicates that a test assertion failed.
  */
-class AssertionException : public std::runtime_error{
+class FailedAssertion : public std::runtime_error{
 public:
-	AssertionException(const char* assertion) : std::runtime_error(assertion), assertion(assertion) {}
+	FailedAssertion(const char* assertion) : std::runtime_error(assertion), assertion(assertion) {}
 	const char* assertion;
 };
 
@@ -31,6 +34,8 @@ public:
  * @exception FailedAssertion Thrown if the assertion is false.
  */
 #define ASSERT(assertion)\
+	/* silences __iocapt unused warning */\
+	(void)__iocapt;\
 	if (!(assertion)){\
 		throw CloudSync::Testing::FailedAssertion(#assertion);\
 	}\
@@ -41,24 +46,44 @@ public:
  * @brief Do not throw this exception directly. Use the EXPECT() macro instead.
  * This exception indicates that an expectation failed.
  */
-class ExpectationException : public std::runtime_error{
+class FailedExpectation : public std::runtime_error{
 public:
-	ExpectationException(const char* expected, const char* actual): std::runtime_error(expected), expected(expected), actual(actual) {}
+	FailedExpectation(const char* expected, std::string actual): std::runtime_error(expected), expected(expected), actual(actual) {}
 	const char* expected;
-	const char* actual;
+	std::string actual;
 };
 
 /**
  * @brief Expects a particular line on stdout, failing the test if not.
  *
- * @param expectation A string containing the text to expect. This does not include the newline.
+ * @param expectation A const char* containing the text to expect. This does not include the newline.
  *
- * @exception ExpectationFailed Thrown if the last line on stdout does not match the expectation.
+ * @exception FailedExpectation Thrown if the last line on stdout does not match the expectation.
  */
 #define EXPECT(expectation)\
 	__expect(expectation, __iocapt)
 
-void __expect(const char* str, IOCapturer& __iocapt);
+void __expect(const char* str, CloudSync::Testing::IOCapturer& __iocapt);
+
+/**
+ * @brief Expects a particular line on stderr, failing the test if not.
+ *
+ * @param expectation A const char* containing the text to expect. This does not include the newline.
+ *
+ * @exception ExpectationFailed Thrown if the last line on stdout does not match the expectation.
+ */
+#define EXPECT_STDERR(expectation)\
+	__expect_stderr(expectation, __iocapt)
+
+void __expect_stderr(const char* str, CloudSync::Testing::IOCapturer& __iocapt);
+
+/**
+ * @brief Sends a line to stdin.
+ *
+ * @param line The line to send.
+ */
+#define SEND(line)\
+	__iocapt.sendToStdin(line)
 
 /**
  * @brief Do not call this function directly. Use the UNIT_TEST macro.
@@ -67,7 +92,7 @@ void __expect(const char* str, IOCapturer& __iocapt);
  * @param test The test to register.
  * @param name The name of the test.
  */
-void __registertest(void(*test)(IOCapturer& __iocapt), const char* name);
+void __registertest(void(*test)(CloudSync::Testing::IOCapturer& __iocapt), const char* name);
 
 /**
  * @brief Do not instantiate this class directly. Use the UNIT_TEST macro.
@@ -81,7 +106,7 @@ public:
 	 * @param test The test to register.
 	 * @param name The name of the test.
 	 */
-	__registerdummy(void(*test)(IOCapturer& __iocapt), const char* name){
+	__registerdummy(void(*test)(CloudSync::Testing::IOCapturer& __iocapt), const char* name){
 		__registertest(test, name);
 	}
 };
@@ -97,9 +122,9 @@ public:
  * Tests can be run with the EXECUTE_TESTS() macro.
  */
 #define UNIT_TEST(str)\
-	void str(IOCapturer& __iocapt);\
+	void str(CloudSync::Testing::IOCapturer& __iocapt);\
 	CloudSync::Testing::__registerdummy __##str(str, #str);\
-	void str(IOCapturer& __iocapt)
+	void str(CloudSync::Testing::IOCapturer& __iocapt)
 
 /**
  * @brief Do not call this function directly. Use the EXECUTE_TESTS macro.
@@ -108,7 +133,7 @@ public:
  * @param argc The command-line argument count.
  * @param argv The command-line arguments.
  */
-int __executetests(int argc, char** argv, IOCapturer& capturer);
+int __executetests(int argc, char** argv);
 
 /**
  * @brief This function executes all tests registered through the UNIT_TEST macro.
@@ -121,7 +146,9 @@ int __executetests(int argc, char** argv, IOCapturer& capturer);
  *
  * @return The number of tests that failed.
  */
-#define EXECUTE_TESTS() IOCapturer __iocapt; CloudSync::Testing::__executetests(argc, argv, __iocapt)
+#define EXECUTE_TESTS() CloudSync::Testing::__executetests(argc, argv)
 
 }
 }
+
+#endif

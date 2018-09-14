@@ -20,7 +20,7 @@ static jmp_buf s_jmpbuf;
 struct Menu::MenuImpl{
 	Alignment menuGravity = CENTER;
 	Axis axis = VERTICAL;
-	std::vector<std::string>& entryVec;
+	std::vector<std::string> entryVec;
 
 	ssize_t DisplayHorizontal();
 	ssize_t DisplayVertical();
@@ -126,6 +126,7 @@ static void PrintMenuVertical(size_t nCols, size_t nRows, size_t vecPtr, std::ve
 
 ssize_t Menu::MenuImpl::DisplayVertical(){
 	size_t nRows = Terminal::GetRows();
+	size_t nCols = Terminal::GetCols();
 	size_t vecPtr = 0;
 	int c;
 
@@ -135,7 +136,7 @@ ssize_t Menu::MenuImpl::DisplayVertical(){
 	}
 
 	do{
-		PrintMenuVertical(nRows, vecPtr, entryVec, menuGravity);
+		PrintMenuVertical(nCols, nRows, vecPtr, entryVec, menuGravity);
 		switch((c = Terminal::getch())){
 		case KEY_DOWN:
 		case 'S':
@@ -155,7 +156,7 @@ ssize_t Menu::MenuImpl::DisplayVertical(){
 }
 
 ssize_t Menu::MenuImpl::DisplayHorizontal(){
-
+	return 0;
 }
 
 Menu::Menu(){

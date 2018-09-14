@@ -24,11 +24,6 @@ namespace CloudSync{
 class BaseClient{
 public:
 	/**
-	 * @brief The destructor must be virtual to prevent memory leaks when deleting a subclass from a base pointer. Thanks C++...
-	 */
-	virtual ~BaseClient() = 0;
-
-	/**
 	 * @brief Logs into the cloud service.
 	 *
 	 * @param username The username/email to log into.

@@ -54,6 +54,7 @@ public:
 		case SHOULDNEVERHAPPEN_ERROR:
 			return "This should never happen.";
 		}
+		return nullptr;
 	}
 
 	MegaClientErrorCode getErrorCode(){
@@ -221,14 +222,9 @@ bool MegaClient::login(const char* username, const char* password){
 		return false;
 	}
 
-<<<<<<< HEAD
-	impl->mapi = std::make_unique<mega::MegaApi>(MEGA_API_KEY, nullptr, "cloudsync");
-=======
-	mapi = std::make_unique<mega::MegaApi>(MEGA_API_KEY, nullptr, "cloudsync");
->>>>>>> 437328ae0d6d4aa373e71f1924e6726be1f65b9a
+	impl->mapi = std::make_unique<mega::MegaApi>(MEGA_API_KEY, (const char*)NULL, "cloudsync");
 
 	impl->mapi->login(username, password, &srl);
-
 	if (srl.trywait(MEGA_WAIT_MS) != 0){
 		impl->lastError.setError(TIMED_OUT);
 		return false;

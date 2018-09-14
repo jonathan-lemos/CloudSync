@@ -13,6 +13,7 @@
 #include <cerrno>
 #include <cstring>
 #include <memory>
+#include <variant>
 
 namespace CloudSync{
 
@@ -50,8 +51,8 @@ public:
 			throw std::runtime_error("Read error");
 		}
 
-		std::sort(readVec.begin(), readVec.end(), [](const auto& elem1, const auto& elem2){
-				return elem1.first().compare(elem2.first()) < 0;
+		std::sort(readVec.begin(), readVec.end(), [](const std::pair<std::string, std::vector<unsigned char>>& elem1, const std::pair<std::string, std::vector<unsigned char>>& elem2){
+				return elem1.first.compare(elem2.first) < 0;
 				});
 	}
 
@@ -99,9 +100,7 @@ public:
 		}
 	}
 
-	~WritingConfigFile(){
-		ofs.close();
-	}
+	/* Members of std::variant<> cannot have non-trivial destructors for god knows what reason */
 
 private:
 	std::ofstream ofs;
@@ -110,19 +109,41 @@ private:
 
 struct ConfigFile::ConfigFileImpl{
 	bool writing;
-	union{
-		ReadingConfigFile rcf;
-		WritingConfigFile wcf;
-	};
+	/* std::variant must be implicitly constructable.
+	 * unfortunately, neither ReadingConfigFile nor WritingConfigFile are.
+	 * however, std::monostate is which is why it is included below.
+	 */
+	std::variant<std::monostate, ReadingConfigFile, WritingConfigFile> cf;
 };
 
 ConfigFile::ConfigFile(): impl(std::make_unique<ConfigFileImpl>()){}
+
+ConfigFile::ConfigFile(ConfigFile& other){
+	swap(*this, other);
+}
+
+ConfigFile& ConfigFile::operator=(ConfigFile& other){
+	swap(*this, other);
+	return *this;
+}
+
+ConfigFile ConfigFile::openForReading(const char* filename){
+	ConfigFile conf;
+	conf.impl->cf.emplace<ReadingConfigFile>(ReadingConfigFile(filename));
+	return conf;
+}
+
+ConfigFile ConfigFile::openForWriting(const char* filename){
+	ConfigFile conf;
+	conf.impl->cf.emplace<WritingConfigFile>(WritingConfigFile(filename));
+	return conf;
+}
 
 ConfigFile& ConfigFile::writeEntry(std::string key, void* data, size_t data_len){
 	if (!impl->writing){
 		throw std::logic_error("ConfigFile is opened in reading mode, but writeEntry() was called.");
 	}
-	impl->wcf.writeEntry(key, data, data_len);
+	std::get<WritingConfigFile>(impl->cf).writeEntry(key, data, data_len);
 	return *this;
 }
 
@@ -130,7 +151,7 @@ std::optional<std::reference_wrapper<const std::vector<unsigned char>>> ConfigFi
 	if (impl->writing){
 		throw std::logic_error("ConfigFile is opened in writing mode, but readEntry() was called.");
 	}
-	return impl->rcf.readEntry(key);
+	return std::get<ReadingConfigFile>(impl->cf).readEntry(key);
 }
 
 void swap(ConfigFile& first, ConfigFile& second){
@@ -138,12 +159,7 @@ void swap(ConfigFile& first, ConfigFile& second){
 }
 
 ConfigFile::~ConfigFile(){
-	if (impl->writing){
-		impl->wcf.~WritingConfigFile();
-	}
-	else{
-		impl->rcf.~ReadingConfigFile();
-	}
+
 }
 
 }

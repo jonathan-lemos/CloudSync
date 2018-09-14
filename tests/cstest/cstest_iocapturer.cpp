@@ -21,7 +21,7 @@
 namespace CloudSync{
 namespace Testing{
 
-static int InstanceCount = 0;
+int IOCapturer::instanceCount = 0;
 
 struct IOCapturerImpl{
 	int stdoutOld = 0;
@@ -32,14 +32,22 @@ struct IOCapturerImpl{
 	int stdinPipe [2] = {0, 0};
 };
 
-IOCapturer::IOCapturer(): impl(){
+IOCapturer::IOCapturer(): impl(std::make_unique<IOCapturerImpl>()){
 	if (instanceCount != 0){
 		throw std::logic_error("Only one instance of IOCapturer can be active at a time");
 	}
 	instanceCount++;
 
 	if (pipe(impl->stdoutPipe) != 0){
-		throw std::runtime_error("Failed to create pipe");
+		throw std::runtime_error("Failed to create stdout pipe (" + std::string(std::strerror(errno)) + ")");
+	}
+
+	if (pipe(impl->stderrPipe) != 0){
+		throw std::runtime_error("Failed to create stderr pipe (" + std::string(std::strerror(errno)) + ")");
+	}
+
+	if (pipe(impl->stdinPipe) != 0){
+		throw std::runtime_error("Failed to create stdin pipe (" + std::string(std::strerror(errno)) + ")");
 	}
 
 	impl->stdoutOld = dup(STDOUT_FILENO);
@@ -56,7 +64,7 @@ IOCapturer::IOCapturer(): impl(){
 
 std::string IOCapturer::getStdout(){
 	char buf[1024];
-	std::string s;
+	std::string s = "";
 	ssize_t ss;
 
 	fcntl(impl->stdoutPipe[P_READ], F_SETFL, O_NONBLOCK);
@@ -69,15 +77,27 @@ std::string IOCapturer::getStdout(){
 
 std::string IOCapturer::getStderr(){
 	char buf[1024];
-	std::string s;
+	std::string s = "";
 	ssize_t ss;
 
-	fcntl(impl->stdoutPipe[P_READ], F_SETFL, O_NONBLOCK);
-	while ((ss = read(impl->stdoutPipe[P_READ], buf, sizeof(buf) - 1)) > 0){
+	fcntl(impl->stderrPipe[P_READ], F_SETFL, O_NONBLOCK);
+	while ((ss = read(impl->stderrPipe[P_READ], buf, sizeof(buf) - 1)) > 0){
 		buf[ss] = '\0';
 		s += buf;
 	}
 	return s;
+}
+
+std::string IOCapturer::getLastLine(std::string input){
+	size_t pos = input.find_last_of('\n');
+	if (pos == std::string::npos){
+		return "";
+	}
+	if (pos == input.size() - 1){
+		input.resize(input.size() - 1);
+		return getLastLine(input);
+	}
+	return std::string(input.c_str() + pos + 1);
 }
 
 void IOCapturer::sendToStdin(const char* line){

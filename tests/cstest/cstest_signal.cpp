@@ -17,6 +17,10 @@
 namespace CloudSync{
 namespace Testing{
 
+jmp_buf __signalhandler::s_jmpbuf;
+volatile sig_atomic_t __signalhandler::s_signo;
+int __signalhandler::instanceCount = 0;
+
 static void handler(int signo){
 	__signalhandler::s_signo = signo;
 	longjmp(__signalhandler::s_jmpbuf, signo);
@@ -25,10 +29,10 @@ static void handler(int signo){
 __signalhandler::__signalhandler(){
 	struct sigaction sa;
 
-	if (instancecount > 0){
+	if (instanceCount > 0){
 		throw new std::logic_error("Cannot have more than one instance of signal handler at a time");
 	}
-	instancecount++;
+	instanceCount++;
 
 	sa.sa_handler = handler;
 	sigfillset(&(sa.sa_mask));
@@ -47,7 +51,7 @@ __signalhandler::__signalhandler(){
 __signalhandler::~__signalhandler(){
 	struct sigaction sa;
 
-	instancecount--;
+	instanceCount--;
 
 	sa.sa_handler = SIG_DFL;
 	sigfillset(&(sa.sa_mask));
@@ -58,7 +62,7 @@ __signalhandler::~__signalhandler(){
 	sigaction(SIGSEGV, &sa, NULL);
 }
 
-sig_atomic_t lastSignal(){
+sig_atomic_t getLastSignal(){
 	return __signalhandler::s_signo;
 }
 

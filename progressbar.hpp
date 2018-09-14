@@ -6,6 +6,9 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
+#ifndef __CS_PROGRESSBAR_HPP
+#define __CS_PROGRESSBAR_HPP
+
 #include <cstdint>
 #include <memory>
 
@@ -31,3 +34,5 @@ private:
 };
 
 }
+
+#endif

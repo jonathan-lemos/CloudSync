@@ -6,8 +6,8 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
-#ifndef __CSTEST_SIGNAL_HPP
-#define __CSTEST_SIGNAL_HPP
+#ifndef __CS_CSTEST_SIGNAL_HPP
+#define __CS_CSTEST_SIGNAL_HPP
 
 #include <setjmp.h>
 #include <signal.h>
@@ -28,12 +28,12 @@ public:
 	static jmp_buf s_jmpbuf;
 	static volatile sig_atomic_t s_signo;
 private:
-	static int instancecount;
+	static int instanceCount;
 };
 
 sig_atomic_t getLastSignal();
 const char* signalToString(sig_atomic_t signo);
-void defaultHandler();
+void defaultHandler(sig_atomic_t signo);
 
 /**
  * @brief Define a signal handler like below:<br>

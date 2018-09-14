@@ -6,6 +6,9 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
+#ifndef __CS_IO_MUTEX_HPP
+#define __CS_IO_MUTEX_HPP
+
 #include <mutex>
 
 namespace CloudSync{
@@ -18,3 +21,5 @@ extern std::mutex io_mutex;
 
 }
 }
+
+#endif

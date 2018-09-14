@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cstring>
+#include <optional>
 
 #include <signal.h>
 #include <setjmp.h>
@@ -49,9 +50,16 @@ static std::vector<std::pair<void(*)(IOCapturer& __iocapt), const char*>>& __get
 }
 
 void __expect(const char* str, IOCapturer& __iocapt){
-	std::string q = __iocapt.getLine();
-	if (std::strcmp(q.c_str(), str) != 0){
-		throw new ExpectationException(str, q.c_str());
+	std::string q = __iocapt.getLastLine(__iocapt.getStdout());
+	if (str != q){
+		throw FailedExpectation(str, q);
+	}
+}
+
+void __expect_stderr(const char* str, IOCapturer& __iocapt){
+	std::string q = __iocapt.getLastLine(__iocapt.getStderr());
+	if (str != q){
+		throw FailedExpectation(str, q);
 	}
 }
 
@@ -59,17 +67,19 @@ void __registertest(void(*test)(IOCapturer&), const char* name){
 	__gettestvec().push_back(std::make_pair(test, name));
 }
 
-int __executetests(int argc, char** argv, IOCapturer& __iocapt){
+int __executetests(int argc, char** argv){
 	size_t i = 0;
 	std::vector<std::pair<void(*)(IOCapturer&), const char*>>& __testvec = __gettestvec();
 	std::vector<std::pair<size_t, const char*>> __failvec;
+	std::optional<IOCapturer> __iocapt = std::nullopt;
 
 	(void)argc;
 	(void)argv;
 
 	// Setup our signal handler
 	signalHandler{
-		defaultHandler();
+		__iocapt.reset();
+		defaultHandler(getLastSignal());
 		// If the program does not exit.
 		__failvec.push_back(std::make_pair(i, __testvec[i].second));
 		std::cout << "Crashed (" << signalToString(getLastSignal()) << ")" << std::endl;
@@ -79,15 +89,26 @@ int __executetests(int argc, char** argv, IOCapturer& __iocapt){
 	for (; i < __testvec.size(); ++i){
 		std::cout << "Test " << i + 1 << " (" << __testvec[i].second << ")...";
 		try{
-			__testvec[i].first(__iocapt);
+			__iocapt.emplace();
+			__testvec[i].first(__iocapt.value());
+			__iocapt.reset();
+
 			std::cout << "Passed";
 		}
-		catch (AssertionException& e){
+		catch (FailedAssertion& e){
+			__iocapt.reset();
 			__failvec.push_back(std::make_pair(i, __testvec[i].second));
 			std::cout << "Failed (" << e.assertion << ")";
 		}
-		catch (ExpectationException& e){
-			std::cout << "Failed (" << e.expected << "!=" << e.actual;
+		catch (FailedExpectation& e){
+			__iocapt.reset();
+			__failvec.push_back(std::make_pair(i, __testvec[i].second));
+			std::cout << "Failed (" << '\"' << e.expected << "\" != \"" << e.actual << "\")";
+		}
+		catch (std::exception& e){
+			__iocapt.reset();
+			__failvec.push_back(std::make_pair(i, __testvec[i].second));
+			std::cout << "Internal error (" << e.what() << ")";
 		}
 		std::cout << std::endl;
 	}
