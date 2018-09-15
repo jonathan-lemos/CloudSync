@@ -1,3 +1,4 @@
 [submodule "mega_sdk"]
 	path = sdk/mega_sdk
 	url = https://github.com/meganz/sdk
+	ignore = dirty
