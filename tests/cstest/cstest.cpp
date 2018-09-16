@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 #include <cstring>
 #include <optional>
 
@@ -21,9 +22,22 @@
 namespace CloudSync{
 namespace Testing{
 
-FailedAssertion::FailedAssertion(const char* assertion): std::runtime_error(assertion) {}
+FailedAssertion::FailedAssertion(const char* assertion): std::runtime_error(assertion) {
+}
 
-FailedExpectation::FailedExpectation(const char* expected, const char* actual): std::runtime_error('\"' + std::string(expected) + "\" != \"" + actual + '\"'){}
+FailedExpectation::FailedExpectation(const char* expected, const char* actual): std::runtime_error('\"' + std::string(expected) + "\" != \"" + actual + '\"'){
+}
+
+template <typename T>
+static T CS_CONST nDigits(T x){
+	T val = 1;
+	T ctr = 0;
+	while (val <= x){
+		val *= 10;
+		ctr++;
+	}
+	return ctr;
+}
 
 /**
  * @brief Prints the results of the testing.
@@ -38,10 +52,11 @@ static void print_results(std::vector<std::pair<void(*)(IOCapturer&), const char
 	std::cout << __failvec.size() << " Failed" << std::endl;
 	std::cout << std::endl;
 
+	std::cout << nDigits(__testvec.size()) << std::endl;
 	std::cout << "Failed tests:" << std::endl;
-	std::for_each(__failvec.begin(), __failvec.end(), [](const auto& elem){
-			std::cout << "Test " << elem.first + 1 << " (" << elem.second << ")" << std::endl;
-			});
+	std::for_each(__failvec.begin(), __failvec.end(), [&__testvec](const auto& elem){
+		std::cout << "Test " << std::left << std::setw(nDigits(__testvec.size())) << elem.first + 1 << " (" << elem.second << ")" << std::endl;
+	});
 }
 
 /**
@@ -76,9 +91,21 @@ int __executetests(int argc, char** argv){
 	std::vector<std::pair<void(*)(IOCapturer&), const char*>>& __testvec = __gettestvec();
 	std::vector<std::pair<size_t, const char*>> __failvec;
 	std::optional<IOCapturer> __iocapt = std::nullopt;
+	size_t maxLen = 0;
 
 	(void)argc;
 	(void)argv;
+
+	if (__testvec.size() == 0){
+		return 0;
+	}
+
+	maxLen = std::strlen(__testvec[0].second);
+	std::for_each(__testvec.begin() + 1, __testvec.end(), [&maxLen](const auto& elem){
+		if (std::strlen(elem.second) > maxLen){
+			maxLen = std::strlen(elem.second);
+		}
+	});
 
 	// Setup our signal handler
 	signalHandler{
@@ -91,7 +118,7 @@ int __executetests(int argc, char** argv){
 	}
 
 	for (; i < __testvec.size(); ++i){
-		std::cout << "Test " << i + 1 << " (" << __testvec[i].second << ")...";
+		std::cout << "Test " << std::left << std::setw(nDigits(__testvec.size())) << i + 1 << " (" << __testvec[i].second << ")...";
 		try{
 			__iocapt.emplace();
 			__testvec[i].first(__iocapt.value());

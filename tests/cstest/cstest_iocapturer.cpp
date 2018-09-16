@@ -104,9 +104,11 @@ void IOCapturer::sendToStdin(const char* line){
 	const char newline = '\n';
 
 	fcntl(impl->stdinPipe[P_WRITE], F_SETFL, O_NONBLOCK);
-	write(impl->stdinPipe[P_WRITE], line, std::strlen(line));
-	if (line[std::strlen(line) - 1] != '\n'){
-		write(impl->stdinPipe[P_WRITE], &newline, 1);
+	if (write(impl->stdinPipe[P_WRITE], line, std::strlen(line)) != (ssize_t)std::strlen(line)){
+		throw std::runtime_error(std::string("Failed to write to stdin (") + std::strerror(errno) + ")");
+	}
+	if (line[std::strlen(line) - 1] != '\n' && write(impl->stdinPipe[P_WRITE], &newline, 1)){
+		throw std::runtime_error(std::string("Failed to write to stdin (") + std::strerror(errno) + ")");
 	}
 }
 

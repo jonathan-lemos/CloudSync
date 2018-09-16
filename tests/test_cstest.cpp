@@ -9,34 +9,51 @@
 #include "cstest/cstest.hpp"
 #include <iostream>
 
-UNIT_TEST(test_arithmetic_pass){
+UNIT_TEST(PASS_arithmetic1){
 	ASSERT(2 + 2 == 4);
 }
 
-UNIT_TEST(test_arithmetic_fail){
+UNIT_TEST(PASS_arithmetic2){
+	ASSERT(2 * 2 == 4);
+	ASSERT(2 * 2 * 2 == 8);
+	ASSERT(4 >> 1 == 2);
+}
+
+UNIT_TEST(FAIL_arithmetic1){
 	ASSERT(2 + 1 == 4);
 }
 
-UNIT_TEST(test_expect_pass1){
+UNIT_TEST(FAIL_arithmetic2){
+	ASSERT(2 + 2 == 4);
+	ASSERT(2 + 1 == 4);
+}
+
+UNIT_TEST(PASS_expect1){
 	std::cout << "expectme" << std::endl;
 	EXPECT("expectme");
 }
 
-UNIT_TEST(test_expect_pass2){
+UNIT_TEST(PASS_expect2){
+	std::cout << "testing123" << std::endl;
+	std::cout << "expectme" << std::endl;
+	EXPECT("expectme");
+}
+
+UNIT_TEST(PASS_expect3){
 	EXPECT("");
 }
 
-UNIT_TEST(test_expect_fail1){
+UNIT_TEST(FAIL_expect1){
 	EXPECT("failme");
 }
 
-UNIT_TEST(test_expect_fail2){
+UNIT_TEST(FAIL_expect2){
 	std::cout << "failme" << std::endl;
 	std::cout << "hunter2" << std::endl;
 	EXPECT("failme");
 }
 
-UNIT_TEST(test_send_pass){
+UNIT_TEST(PASS_send1){
 	std::string s;
 
 	std::cout << "testprompt:";
@@ -47,7 +64,7 @@ UNIT_TEST(test_send_pass){
 	EXPECT(s.c_str());
 }
 
-UNIT_TEST(test_send_fail){
+UNIT_TEST(PASS_send2){
 	std::string s;
 
 	std::cout << "testprompt:";
