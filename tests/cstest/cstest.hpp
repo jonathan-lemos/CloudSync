@@ -22,8 +22,7 @@ namespace Testing{
  */
 class FailedAssertion : public std::runtime_error{
 public:
-	FailedAssertion(const char* assertion) : std::runtime_error(assertion), assertion(assertion) {}
-	const char* assertion;
+	FailedAssertion(const char* assertion);
 };
 
 /**
@@ -48,9 +47,7 @@ public:
  */
 class FailedExpectation : public std::runtime_error{
 public:
-	FailedExpectation(const char* expected, std::string actual): std::runtime_error(expected), expected(expected), actual(actual) {}
-	const char* expected;
-	std::string actual;
+	FailedExpectation(const char* expected, const char* actual);
 };
 
 /**

@@ -1,2 +1,4 @@
 keys.cpp
 *.o
+*.x
+cloudsync

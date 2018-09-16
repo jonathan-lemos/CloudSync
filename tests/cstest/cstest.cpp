@@ -21,6 +21,10 @@
 namespace CloudSync{
 namespace Testing{
 
+FailedAssertion::FailedAssertion(const char* assertion): std::runtime_error(assertion) {}
+
+FailedExpectation::FailedExpectation(const char* expected, const char* actual): std::runtime_error('\"' + std::string(expected) + "\" != \"" + actual + '\"'){}
+
 /**
  * @brief Prints the results of the testing.
  *
@@ -50,16 +54,16 @@ static std::vector<std::pair<void(*)(IOCapturer& __iocapt), const char*>>& __get
 }
 
 void __expect(const char* str, IOCapturer& __iocapt){
-	std::string q = __iocapt.getLastLine(__iocapt.getStdout());
+	std::string q = IOCapturer::getLastLine(__iocapt.getStdout());
 	if (str != q){
-		throw FailedExpectation(str, q);
+		throw FailedExpectation(str, q.c_str());
 	}
 }
 
 void __expect_stderr(const char* str, IOCapturer& __iocapt){
-	std::string q = __iocapt.getLastLine(__iocapt.getStderr());
+	std::string q = IOCapturer::getLastLine(__iocapt.getStderr());
 	if (str != q){
-		throw FailedExpectation(str, q);
+		throw FailedExpectation(str, q.c_str());
 	}
 }
 
@@ -98,12 +102,12 @@ int __executetests(int argc, char** argv){
 		catch (FailedAssertion& e){
 			__iocapt.reset();
 			__failvec.push_back(std::make_pair(i, __testvec[i].second));
-			std::cout << "Failed (" << e.assertion << ")";
+			std::cout << "Failed (" << e.what() << ")";
 		}
 		catch (FailedExpectation& e){
 			__iocapt.reset();
 			__failvec.push_back(std::make_pair(i, __testvec[i].second));
-			std::cout << "Failed (" << '\"' << e.expected << "\" != \"" << e.actual << "\")";
+			std::cout << "Failed (" << e.what() << ")";
 		}
 		catch (std::exception& e){
 			__iocapt.reset();

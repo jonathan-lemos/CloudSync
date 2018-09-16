@@ -9,7 +9,7 @@
 #include "cstest/cstest.hpp"
 #include <iostream>
 
-UNIT_TEST(test_pass){
+UNIT_TEST(test_arithmetic_pass){
 	ASSERT(2 + 2 == 4);
 }
 

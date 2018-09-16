@@ -91,7 +91,7 @@ std::string IOCapturer::getStderr(){
 std::string IOCapturer::getLastLine(std::string input){
 	size_t pos = input.find_last_of('\n');
 	if (pos == std::string::npos){
-		return "";
+		return input;
 	}
 	if (pos == input.size() - 1){
 		input.resize(input.size() - 1);
