@@ -45,17 +45,23 @@ static T CS_CONST nDigits(T x){
  * @param __testvec The test vector retrieved through __gettestvec()
  * @param __failvec The tests that failed.
  */
-static void print_results(std::vector<std::pair<void(*)(IOCapturer&), const char*>>& __testvec, std::vector<std::pair<size_t, const char*>>& __failvec){
+static void printResults(size_t __testvec_size, std::vector<std::tuple<size_t, const char*, std::string>>& __failvec){
+	size_t maxLen = std::strlen(std::get<const char*>(__failvec[0]));
+	std::for_each(__failvec.begin() + 1, __failvec.end(), [&maxLen](const auto& elem){
+		if (std::strlen(std::get<const char*>(elem)) > maxLen){
+			maxLen = std::strlen(std::get<const char*>(elem));
+		}
+	});
+
 	std::cout << std::endl;
 	std::cout << "Results:" << std::endl;
-	std::cout << __testvec.size() - __failvec.size() << " Passed" << std::endl;
+	std::cout << __testvec_size - __failvec.size() << " Passed" << std::endl;
 	std::cout << __failvec.size() << " Failed" << std::endl;
 	std::cout << std::endl;
 
-	std::cout << nDigits(__testvec.size()) << std::endl;
 	std::cout << "Failed tests:" << std::endl;
-	std::for_each(__failvec.begin(), __failvec.end(), [&__testvec](const auto& elem){
-		std::cout << "Test " << std::left << std::setw(nDigits(__testvec.size())) << elem.first + 1 << " (" << elem.second << ")" << std::endl;
+	std::for_each(__failvec.begin(), __failvec.end(), [__testvec_size, maxLen](const auto& elem){
+		std::cout << "Test " << std::left << std::setw(nDigits(__testvec_size)) << std::get<size_t>(elem) + 1 << " (" << std::setw(maxLen) << std::get<const char*>(elem) << ") (" << std::get<std::string>(elem) << ')' << std::endl;
 	});
 }
 
@@ -75,29 +81,19 @@ void __expect(const char* str, IOCapturer& __iocapt){
 	}
 }
 
-void __expect_stderr(const char* str, IOCapturer& __iocapt){
-	std::string q = IOCapturer::getLastLine(__iocapt.getStderr());
-	if (str != q){
-		throw FailedExpectation(str, q.c_str());
-	}
-}
-
 void __registertest(void(*test)(IOCapturer&), const char* name){
 	__gettestvec().push_back(std::make_pair(test, name));
 }
 
-int __executetests(int argc, char** argv){
+/* i love c++ */
+static std::vector<std::tuple<size_t, const char*, std::string>> runTests(std::vector<std::pair<void(*)(IOCapturer&), const char*>>& __testvec){
 	size_t i = 0;
-	std::vector<std::pair<void(*)(IOCapturer&), const char*>>& __testvec = __gettestvec();
-	std::vector<std::pair<size_t, const char*>> __failvec;
-	std::optional<IOCapturer> __iocapt = std::nullopt;
 	size_t maxLen = 0;
-
-	(void)argc;
-	(void)argv;
+	std::vector<std::tuple<size_t, const char*, std::string>> __failvec;
+	std::optional<IOCapturer> __iocapt = std::nullopt;
 
 	if (__testvec.size() == 0){
-		return 0;
+		return {};
 	}
 
 	maxLen = std::strlen(__testvec[0].second);
@@ -112,13 +108,17 @@ int __executetests(int argc, char** argv){
 		__iocapt.reset();
 		defaultHandler(getLastSignal());
 		// If the program does not exit.
-		__failvec.push_back(std::make_pair(i, __testvec[i].second));
+		__failvec.push_back(std::make_tuple(i, __testvec[i].second, std::string("Crashed (") + signalToString(getLastSignal()) + ")"));
 		std::cout << "Crashed (" << signalToString(getLastSignal()) << ")" << std::endl;
 		i++;
 	}
 
 	for (; i < __testvec.size(); ++i){
-		std::cout << "Test " << std::left << std::setw(nDigits(__testvec.size())) << i + 1 << " (" << __testvec[i].second << ")...";
+		std::cout << "Test " << std::left << std::setw(nDigits(__testvec.size())) << i + 1 << " (" << __testvec[i].second << ")";
+		for (size_t j = 0; j < maxLen - std::strlen(__testvec[i].second) + 3; ++j){
+			std::cout << '.';
+		}
+
 		try{
 			__iocapt.emplace();
 			__testvec[i].first(__iocapt.value());
@@ -128,23 +128,36 @@ int __executetests(int argc, char** argv){
 		}
 		catch (FailedAssertion& e){
 			__iocapt.reset();
-			__failvec.push_back(std::make_pair(i, __testvec[i].second));
+			__failvec.push_back(std::make_tuple(i, __testvec[i].second, e.what()));
 			std::cout << "Failed (" << e.what() << ")";
 		}
 		catch (FailedExpectation& e){
 			__iocapt.reset();
-			__failvec.push_back(std::make_pair(i, __testvec[i].second));
+			__failvec.push_back(std::make_tuple(i, __testvec[i].second, e.what()));
 			std::cout << "Failed (" << e.what() << ")";
 		}
 		catch (std::exception& e){
 			__iocapt.reset();
-			__failvec.push_back(std::make_pair(i, __testvec[i].second));
+			__failvec.push_back(std::make_tuple(i, __testvec[i].second, std::string("Internal error :") + e.what()));
 			std::cout << "Internal error (" << e.what() << ")";
 		}
 		std::cout << std::endl;
 	}
 
-	print_results(__testvec, __failvec);
+	return __failvec;
+}
+
+int __executetests(int argc, char** argv){
+	std::vector<std::pair<void(*)(IOCapturer&), const char*>>& __testvec = __gettestvec();
+	std::vector<std::tuple<size_t, const char*, std::string>> __failvec;
+	std::optional<IOCapturer> __iocapt = std::nullopt;
+
+	(void)argc;
+	(void)argv;
+
+	__failvec = runTests(__testvec);
+
+	printResults(__testvec.size(), __failvec);
 
 	return __failvec.size();
 }

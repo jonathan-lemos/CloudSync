@@ -34,21 +34,14 @@ public:
 	~IOCapturer();
 
 	/**
-	 * @brief Returns all of what was sent to stdout since the last call to getStdout()
+	 * @brief Returns all of what was sent to stdout/stderr since the last call to getStdout()
 	 *
-	 * @return stdout's input, including all newlines.
+	 * @return stdout/stderr's input, including all newlines.
 	 */
 	std::string getStdout();
 
 	/**
-	 * @brief Returns all of what was sent to stderr since the last call to getStderr()
-	 *
-	 * @return stderr's input, including all newlines.
-	 */
-	std::string getStderr();
-
-	/**
-	 * @brief Returns the last line of getStdout()/getStderr()
+	 * @brief Returns the last line of getStdout()
 	 */
 	static std::string getLastLine(std::string input);
 

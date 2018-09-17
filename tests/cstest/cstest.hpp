@@ -51,11 +51,11 @@ public:
 };
 
 /**
- * @brief Expects a particular line on stdout, failing the test if not.
+ * @brief Expects a particular line on stdout/stderr, failing the test if not.
  *
  * @param expectation A const char* containing the text to expect. This does not include the newline.
  *
- * @exception FailedExpectation Thrown if the last line on stdout does not match the expectation.
+ * @exception FailedExpectation Thrown if the last line on stdout/stderr does not match the expectation.
  */
 #define EXPECT(expectation)\
 	__expect(expectation, __iocapt)
@@ -63,19 +63,10 @@ public:
 void __expect(const char* str, CloudSync::Testing::IOCapturer& __iocapt);
 
 /**
- * @brief Expects a particular line on stderr, failing the test if not.
- *
- * @param expectation A const char* containing the text to expect. This does not include the newline.
- *
- * @exception ExpectationFailed Thrown if the last line on stdout does not match the expectation.
- */
-#define EXPECT_STDERR(expectation)\
-	__expect_stderr(expectation, __iocapt)
-
-void __expect_stderr(const char* str, CloudSync::Testing::IOCapturer& __iocapt);
-
-/**
  * @brief Sends a line to stdin.
+ *
+ * @bug stdin must be empty before SEND() can be used.
+ * This means that SEND() can only be called once until stdin is emptied through std::cin or other input fetching functions.
  *
  * @param line The line to send.
  */
@@ -144,6 +135,16 @@ int __executetests(int argc, char** argv);
  * @return The number of tests that failed.
  */
 #define EXECUTE_TESTS() CloudSync::Testing::__executetests(argc, argv)
+
+/**
+ * @brief By default, all screen output is captured for use with the EXPECT() macro.
+ * This macro prints a message directly to the screen.
+ *
+ * @param __VA_ARGS__ A printf format string and its subsequent varargs, if any.
+ *
+ * @return The number of characters successfully written.
+ */
+#define TEST_PRINTF(...) __iocapt.printToScreen(__VA_ARGS__)
 
 }
 }

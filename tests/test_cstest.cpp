@@ -43,6 +43,11 @@ UNIT_TEST(PASS_expect3){
 	EXPECT("");
 }
 
+UNIT_TEST(PASS_expect4){
+	std::cerr << "expecterr" << std::endl;
+	EXPECT("expecterr");
+}
+
 UNIT_TEST(FAIL_expect1){
 	EXPECT("failme");
 }
@@ -53,6 +58,12 @@ UNIT_TEST(FAIL_expect2){
 	EXPECT("failme");
 }
 
+UNIT_TEST(FAIL_expect3){
+	std::cerr << "expecterr" << std::endl;
+	std::cout << "expectout" << std::endl;
+	EXPECT("expecterr");
+}
+
 UNIT_TEST(PASS_send1){
 	std::string s;
 
@@ -61,7 +72,7 @@ UNIT_TEST(PASS_send1){
 	std::cin >> s;
 	std::cout << s << std::endl;
 
-	EXPECT(s.c_str());
+	EXPECT("testprompt:teststr");
 }
 
 UNIT_TEST(PASS_send2){
@@ -72,6 +83,30 @@ UNIT_TEST(PASS_send2){
 	std::cin >> s;
 
 	EXPECT("testprompt:");
+}
+
+UNIT_TEST(FAIL_send1){
+	std::string s;
+
+	std::cout << "testprompt:";
+	SEND("failme");
+	std::cin >> s;
+
+	EXPECT("notastring");
+}
+
+UNIT_TEST(FAIL_send2){
+	std::string s;
+	std::cout << "testprompt:";
+	SEND("failme");
+	std::cin >> s;
+
+	EXPECT("failme");
+}
+
+UNIT_TEST(PASS_test_printf){
+	TEST_PRINTF("qqq\n");
+	TEST_PRINTF("test printf %d\n", 123);
 }
 
 int main(int argc, char** argv){

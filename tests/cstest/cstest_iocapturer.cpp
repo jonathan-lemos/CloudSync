@@ -28,7 +28,6 @@ struct IOCapturerImpl{
 	int stderrOld = 0;
 	int stdinOld  = 0;
 	int stdoutPipe[2] = {0, 0};
-	int stderrPipe[2] = {0, 0};
 	int stdinPipe [2] = {0, 0};
 };
 
@@ -42,23 +41,19 @@ IOCapturer::IOCapturer(): impl(std::make_unique<IOCapturerImpl>()){
 		throw std::runtime_error("Failed to create stdout pipe (" + std::string(std::strerror(errno)) + ")");
 	}
 
-	if (pipe(impl->stderrPipe) != 0){
-		throw std::runtime_error("Failed to create stderr pipe (" + std::string(std::strerror(errno)) + ")");
-	}
-
 	if (pipe(impl->stdinPipe) != 0){
 		throw std::runtime_error("Failed to create stdin pipe (" + std::string(std::strerror(errno)) + ")");
 	}
 
 	impl->stdoutOld = dup(STDOUT_FILENO);
-	impl->stderrOld = dup(STDOUT_FILENO);
+	impl->stderrOld = dup(STDERR_FILENO);
 	impl->stdinOld  = dup(STDIN_FILENO);
 
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
 
 	dup2(impl->stdoutPipe[P_WRITE], STDOUT_FILENO);
-	dup2(impl->stderrPipe[P_WRITE], STDERR_FILENO);
+	dup2(impl->stdoutPipe[P_WRITE], STDERR_FILENO);
 	dup2(impl->stdinPipe[P_READ], STDIN_FILENO);
 }
 
@@ -75,6 +70,7 @@ std::string IOCapturer::getStdout(){
 	return s;
 }
 
+/*
 std::string IOCapturer::getStderr(){
 	char buf[1024];
 	std::string s = "";
@@ -87,6 +83,7 @@ std::string IOCapturer::getStderr(){
 	}
 	return s;
 }
+*/
 
 std::string IOCapturer::getLastLine(std::string input){
 	size_t pos = input.find_last_of('\n');
@@ -101,14 +98,25 @@ std::string IOCapturer::getLastLine(std::string input){
 }
 
 void IOCapturer::sendToStdin(const char* line){
-	const char newline = '\n';
+	char* val = nullptr;
+	const char* write_ptr = line;
+	if (line[std::strlen(line) - 1] != '\n'){
+		val = new char[std::strlen(line) + 2];
+		std::strcpy(val, line);
+		std::strcat(val, "\n");
+		write_ptr = val;
+	}
 
+	/* writes to stdin have to be performed in one shot.
+	 * any subsequent writes to stdin without a corresponding read will fail.
+	 */
 	fcntl(impl->stdinPipe[P_WRITE], F_SETFL, O_NONBLOCK);
-	if (write(impl->stdinPipe[P_WRITE], line, std::strlen(line)) != (ssize_t)std::strlen(line)){
+	if (write(impl->stdinPipe[P_WRITE], write_ptr, std::strlen(write_ptr)) != (ssize_t)std::strlen(write_ptr)){
 		throw std::runtime_error(std::string("Failed to write to stdin (") + std::strerror(errno) + ")");
 	}
-	if (line[std::strlen(line) - 1] != '\n' && write(impl->stdinPipe[P_WRITE], &newline, 1)){
-		throw std::runtime_error(std::string("Failed to write to stdin (") + std::strerror(errno) + ")");
+
+	if (val != nullptr){
+		delete[] val;
 	}
 }
 
@@ -125,19 +133,22 @@ int IOCapturer::printToScreen(const char* format, ...){
 		throw std::logic_error("Invalid printf expression");
 	}
 
-	buf = new char[len];
+	buf = new char[len + 1];
 	if (!buf){
 		va_end(ap);
 		throw std::runtime_error("Out of memory");
 	}
 
-	if (std::vsnprintf(buf, len, format, ap) != len){
+	va_end(ap);
+	va_start(ap, format);
+
+	if (std::vsnprintf(buf, len + 1, format, ap) != len){
 		va_end(ap);
 		delete[] buf;
 		throw std::runtime_error("vsnprintf() write error");
 	}
 
-	if (write(impl->stdoutOld, buf, len) != 0){
+	if (write(impl->stdoutOld, buf, len) != len){
 		va_end(ap);
 		delete[] buf;
 		throw std::runtime_error("write() error");
