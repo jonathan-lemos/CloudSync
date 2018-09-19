@@ -1,4 +1,4 @@
-/** @file cstest.cpp
+/** @file tests/cstest/cstest.cpp
  * @brief CloudSync testing framework.
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *
@@ -25,7 +25,7 @@ namespace Testing{
 FailedAssertion::FailedAssertion(const char* assertion): std::runtime_error(assertion) {
 }
 
-FailedExpectation::FailedExpectation(const char* expected, const char* actual): std::runtime_error('\"' + std::string(expected) + "\" != \"" + actual + '\"'){
+FailedExpectation::FailedExpectation(const char* expected, const char* actual): std::runtime_error('\"' + std::string(expected) + "\" == \"" + actual + '\"'){
 }
 
 template <typename T>
@@ -59,10 +59,19 @@ static void printResults(size_t __testvec_size, std::vector<std::tuple<size_t, c
 	std::cout << __failvec.size() << " Failed" << std::endl;
 	std::cout << std::endl;
 
-	std::cout << "Failed tests:" << std::endl;
-	std::for_each(__failvec.begin(), __failvec.end(), [__testvec_size, maxLen](const auto& elem){
-		std::cout << "Test " << std::left << std::setw(nDigits(__testvec_size)) << std::get<size_t>(elem) + 1 << " (" << std::setw(maxLen) << std::get<const char*>(elem) << ") (" << std::get<std::string>(elem) << ')' << std::endl;
-	});
+	if (__failvec.size() > 0){
+		std::cout << "Failed tests:" << std::endl;
+		std::for_each(__failvec.begin(), __failvec.end(), [__testvec_size, maxLen](const auto& elem){
+			std::cout << "Test " << std::left << std::setw(nDigits(__testvec_size)) << std::get<size_t>(elem) + 1 << " (" << std::get<const char*>(elem) << ')';
+			for (size_t i = 0; i < maxLen - std::strlen(std::get<const char*>(elem)) + 3; ++i){
+				std::cout << '.';
+			}
+			std::cout << '(' << std::get<std::string>(elem) << ')' << std::endl;
+		});
+	}
+	else{
+		std::cout << "No failed tests" << std::endl;
+	}
 }
 
 /**
@@ -108,7 +117,7 @@ static std::vector<std::tuple<size_t, const char*, std::string>> runTests(std::v
 		__iocapt.reset();
 		defaultHandler(getLastSignal());
 		// If the program does not exit.
-		__failvec.push_back(std::make_tuple(i, __testvec[i].second, std::string("Crashed (") + signalToString(getLastSignal()) + ")"));
+		__failvec.push_back(std::make_tuple(i, __testvec[i].second, std::string("Crashed: ") + signalToString(getLastSignal())));
 		std::cout << "Crashed (" << signalToString(getLastSignal()) << ")" << std::endl;
 		i++;
 	}

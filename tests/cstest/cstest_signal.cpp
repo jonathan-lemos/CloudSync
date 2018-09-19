@@ -1,4 +1,4 @@
-/** @file cstest_signal.cpp
+/** @file tests/cstest/cstest_signal.cpp
  * @brief CloudSync testing framework signal handler.
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *

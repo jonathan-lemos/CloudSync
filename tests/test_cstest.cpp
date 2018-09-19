@@ -1,4 +1,4 @@
-/** @file test_cstest.cpp
+/** @file tests/test_cstest.cpp
  * @brief Tests cstest framework
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *
@@ -107,6 +107,12 @@ UNIT_TEST(FAIL_send2){
 UNIT_TEST(PASS_test_printf){
 	TEST_PRINTF("qqq\n");
 	TEST_PRINTF("test printf %d\n", 123);
+}
+
+UNIT_TEST(FAIL_segfault){
+	int* q = NULL;
+	*q = 0xF00BA4;
+	(void)__iocapt;
 }
 
 int main(int argc, char** argv){

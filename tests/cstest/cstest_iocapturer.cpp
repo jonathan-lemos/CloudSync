@@ -1,4 +1,4 @@
-/** @file cstest_iocapturer.hpp
+/** @file tests/cstest/cstest_iocapturer.cpp
  * @brief CloudSync testing framework I/O capturer.
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *

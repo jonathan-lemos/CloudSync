@@ -1,4 +1,4 @@
-/** @file cstest.hpp
+/** @file tests/cstest/cstest.hpp
  * @brief CloudSync testing framework.
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *
@@ -145,6 +145,44 @@ int __executetests(int argc, char** argv);
  * @return The number of characters successfully written.
  */
 #define TEST_PRINTF(...) __iocapt.printToScreen(__VA_ARGS__)
+
+/**
+ * @brief A dummy class used for cleanup purposes.
+ * Do not instantiate this class directly, use the SET_CLEANUP() macro instead.
+ *
+ * Note to self: C++ template classes cannot be split into .hpp and .cpp.
+ */
+template <class CleanupLambda>
+class __cleanupdummy{
+public:
+	__cleanupdummy(CleanupLambda cl): cl(cl){
+	}
+	/**
+	 * @brief Calls the cleanup lambda set in the constructor.
+	 */
+	~__cleanupdummy(){
+		cl();
+	}
+private:
+	CleanupLambda cl;
+};
+
+/**
+ * @brief Sets a cleanup lambda that is executed when the test exits.
+ *
+ * @param lambda A lambda function. For example:<br>
+ * ```C++
+ * char* cptr = new char[20];
+ * int* iptr  = new int[50];
+ * SET_CLEANUP([&cptr, &iptr]{
+ *     delete[] cptr;
+ *     delete[] iptr;
+ * });
+ * ```
+ * <br>
+ * This only needs to be used for objects that cannot be cleaned up through RAII.
+ */
+#define SET_CLEANUP(lambda) __cleanupdummy __cld(lambda); (void)__cld
 
 }
 }
