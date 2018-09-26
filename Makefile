@@ -37,11 +37,17 @@ release: main.o $(OBJECTS)
 debug: main.dbg.o $(DBGOBJECTS)
 	$(CC) -o $(NAME) main.dbg.o $(DBGOBJECTS) $(CXXFLAGS) $(DBGFLAGS) $(LDFLAGS)
 
+.PHONY: framework
+framework:
+	cd tests/simpletest
+	make
+	cd ../..
+
 .PHONY: docs
 docs:
 	doxygen Doxyfile
 
-test: $(TESTEXECS) $(FRAMEWORKOBJECTS) $(TESTOBJECTS)
+test: $(TESTEXECS) $(TESTOBJECTS) framework
 	@echo "Made all tests"
 
 %.x: %.dbg.o $(DBGOBJECTS) $(FRAMEWORKOBJECTS)
