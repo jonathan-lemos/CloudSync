@@ -2,6 +2,3 @@
 	path = sdk/mega_sdk
 	url = https://github.com/meganz/sdk
 	ignore = dirty
-[submodule "tests/simpletest"]
-	path = tests/simpletest
-	url = https://github.com/jonathanrlemos/simpletest

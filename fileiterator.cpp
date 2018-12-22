@@ -51,7 +51,9 @@ FileIterator::FileIterator(const char* baseDir): impl(std::make_unique<FileItera
 	impl->dirStack.push(baseDir);
 }
 
-std::string make_path(const char* dir, const char* d_name){
+FileIterator::~FileIterator() = default;
+
+static std::string make_path(const char* dir, const char* d_name){
 	std::string ret = dir;
 	if (ret[ret.length() - 1] != '/'){
 		ret += '/';

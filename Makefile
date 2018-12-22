@@ -17,15 +17,14 @@ LDFLAGS=-lmega
 
 DIRECTORIES=$(shell find . -type d 2>/dev/null | sed -re 's|^.*\.git.*$$||;s|.*/sdk.*$$||;s|^.*/tests.*$$||' | awk 'NF')
 FILES=$(foreach directory,$(DIRECTORIES),$(shell ls $(directory) | egrep '^.*\.cpp$$' | sed -re 's|^.*main.cpp$$||;s|^(.+)\.cpp$$|\1|' | awk 'NF'))
-TESTS=$(shell find tests -type f -name '*.cpp' 2>/dev/null | sed -re 's|^.*cstest/.*$$||;s|^(.+)\.cpp$$|\1|' | awk 'NF')
-FRAMEWORKFILES=$(shell ls tests/cstest | egrep '^.*\.cpp$$' | sed -re 's|^(.+)\.cpp$$|\1|' | awk 'NF')
+TESTS=$(shell find tests -type f -name '*.cpp' -not -path 'tests/simpletest/*' 2>/dev/null | sed -re 's|^(.+)\.cpp$$|\1|' | awk 'NF')
+FRAMEWORKOBJECTS=tests/simpletest/libsimpletest.a
 
 SOURCEFILES=$(foreach file,$(FILES),$(file).cpp)
 OBJECTS=$(foreach file,$(FILES),$(file).o)
 DBGOBJECTS=$(foreach file,$(FILES),$(file).dbg.o)
 TESTOBJECTS=$(foreach test,$(TESTS),$(test).dbg.o)
 TESTEXECS=$(foreach test,$(TESTS),$(test).x)
-FRAMEWORKOBJECTS=$(foreach frameworkfile,$(FRAMEWORKFILES),tests/cstest/$(frameworkfile).dbg.o)
 
 .PHONY: q
 q:
@@ -39,19 +38,17 @@ debug: main.dbg.o $(DBGOBJECTS)
 
 .PHONY: framework
 framework:
-	cd tests/simpletest
-	make
-	cd ../..
+	cd tests/simpletest && $(MAKE) debug
 
 .PHONY: docs
 docs:
 	doxygen Doxyfile
 
-test: $(TESTEXECS) $(TESTOBJECTS) framework
+test: framework $(TESTEXECS) $(TESTOBJECTS)
 	@echo "Made all tests"
 
-%.x: %.dbg.o $(DBGOBJECTS) $(FRAMEWORKOBJECTS)
-	$(CXX) -o $@ $< $(FRAMEWORKOBJECTS) $(DBGOBJECTS) $(CXXFLAGS) $(DBGFLAGS) $(LDFLAGS)
+%.x: %.dbg.o $(DBGOBJECTS)
+	$(CXX) -o $@ $< $(DBGOBJECTS) $(FRAMEWORKOBJECTS) $(CXXFLAGS) $(DBGFLAGS) $(LDFLAGS)
 
 %.o: %.cpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS) $(RELEASEFLAGS)
@@ -63,10 +60,11 @@ test: $(TESTEXECS) $(TESTOBJECTS) framework
 clean:
 	rm -f *.o $(NAME) main.c.* vgcore.* $(TESTOBJECTS) $(DBGOBJECTS) $(OBJECTS) $(TESTEXECS) $(FRAMEWORKOBJECTS)
 	rm -rf docs
+	cd tests/simpletest && $(MAKE) clean
 
 .PHONY: linecount
 linecount:
-	wc -l Makefile README.md $(foreach dir,$(DIRECTORIES),$(dir)/*.hpp $(dir)/*.cpp) $(foreach test,$(TESTS),$(test).cpp) $(foreach frameworkfile,$(FRAMEWORKFILES),$(frameworkfile).hpp $(frameworkfile).cpp) 2>/dev/null | sort -k2,2
+	wc -l Makefile README.md $(foreach dir,$(DIRECTORIES),$(dir)/*.hpp $(dir)/*.cpp) $(foreach test,$(TESTS),$(test).cpp) 2>/dev/null | sort -k2,2
 
 .PHONY: linecount_notests
 linecount_notests:

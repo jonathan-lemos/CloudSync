@@ -11,12 +11,12 @@
 
 #include <memory>
 
-namespace CloudSync{
+namespace CloudSync {
 
 /**
  * @brief A class that recursively iterates though files in a directory.
  */
-class FileIterator{
+class FileIterator {
 public:
 	/**
 	 * @brief Constructs a FileIterator class starting at the specified directory.
@@ -26,6 +26,12 @@ public:
 	 * @exception std::runtime_error Could not open the specified directory.
 	 */
 	FileIterator(const char* baseDir);
+
+	/**
+	 * @brief We have to explicitly define the destructor, otherwise the pImpl unique_ptr has errors determining how to delete the FileIteratorImpl.
+	 * Note that we cannot set it equal to default here, as FileIteratorImpl is not defined here.
+	 */
+	~FileIterator();
 
 	/**
 	 * @brief Returns the next entry in the directory, or nullptr if there are no more entries.

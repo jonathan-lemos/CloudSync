@@ -10,10 +10,11 @@
 #define __CONFIG_HPP
 
 #include "attribute.hpp"
-#include <vector>
-#include <string>
-#include <optional>
+#include <cstdint>
 #include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 
 namespace CloudSync{
@@ -21,37 +22,42 @@ namespace CloudSync{
 /**
  * @brief Writes/reads to/from a config file.
  */
-class ConfigFile{
+class ConfigFile {
 public:
-	ConfigFile(ConfigFile& other);
-
-	ConfigFile& operator=(ConfigFile& other);
 	/**
-	 * @brief Opens a config file for reading and reads all of its entries.
+	 * @brief Creates a new ConfigFile at the given path.
+	 * If a file does not exist at this path, it will be created.
 	 *
-	 * @param filename The filename to read.
+	 * @param filename The path of the config file to open.
 	 *
-	 * @return A ConfigFile object corresponding to the specified file.
-	 *
-	 * @exception std::runtime_error Failed to open/read from the specified file.
-	 * @exception std::invalid_argument The file was not of the correct format.
+	 * @exception std::runtime_error The given file already exists and is not of the correct format.
 	 */
-	static ConfigFile openForReading(const char* filename);
+	ConfigFile(const char* path);
 
 	/**
-	 * @brief Opens a config file for writing.
-	 *
-	 * @param filename The filename to write to.
-	 * If a file already exists at this location, it will be overwritten.
-	 *
-	 * @return A ConfigFile object corresponding to the specified file.
-	 *
-	 * @exception std::runtime_error Failed to open the specified file.
+	 * @brief Move constructor for a ConfigFile.
 	 */
-	static ConfigFile openForWriting(const char* filename);
+	ConfigFile(ConfigFile&& other);
 
 	/**
-	 * @brief Closes the internal fstream.
+	 * @brief Deleted copy constructor for a ConfigFile.
+	 * ConfigFiles are not meant to be copied.
+	 */
+	ConfigFile(const ConfigFile& other) = delete;
+
+	/**
+	 * @brief Move assignment operator for a ConfigFile.
+	 */
+	ConfigFile& operator=(ConfigFile&& other);
+
+	/**
+	 * @brief Deleted copy assignment operator for a ConfigFile.
+	 * ConfigFiles are not meant to be copied.
+	 */
+	ConfigFile& operator=(const ConfigFile& other) = delete;
+
+	/**
+	 * @brief Closes the internal fstream and flushes any pending changes.
 	 */
 	~ConfigFile();
 
@@ -61,6 +67,10 @@ public:
 	 * @see CloudSync::ConfigFile::readEntry()
 	 *
 	 * @param key The key that will be used to refer to the data.
+	 * If a key with this entry already exists, it will be overwritten.
+	 * At the moment, the key can contain any character.
+	 * For future compatibillity, restrict the key to [A-Za-z0-9].
+	 *
 	 * @param data The data to write.
 	 * @param data_len The length of the data to write.
 	 *
@@ -69,7 +79,7 @@ public:
 	 * @exception std::logic_error The ConfigFile is opened for reading instead of writing.
 	 * @exception std::runtime_error I/O error when writing to the file.
 	 */
-	ConfigFile& writeEntry(std::string key, void* data, size_t data_len);
+	ConfigFile& writeEntry(const char* key, void* data, uint64_t data_len);
 
 	/**
 	 * @brief Retrieves the data corresponding to the given key from the file.
@@ -77,21 +87,18 @@ public:
 	 *
 	 * @param key The key to retrieve.
 	 *
-	 * @return A reference to the corresponding data as a vector, or std::nullopt if the key could not be found within the file.
-	 *
-	 * @exception std::logic_error The ConfigFile is opened for writing instead of reading.
+	 * @return A reference to a byte vector, or std::nullopt if the key could not be found.
 	 */
-	std::optional<std::reference_wrapper<const std::vector<unsigned char>>> CS_PURE readEntry(std::string key);
+	std::optional<std::reference_wrapper<const std::vector<unsigned char>>> CS_PURE readEntry(const char* key);
 
-	friend void swap(ConfigFile& first, ConfigFile& second);
+	/**
+	 * @brief Flushes the current unwritten changes to the buffer.
+	 *
+	 * @exception std::runtime_error There was an I/O error writing to the file.
+	 */
+	void flush();
 
 private:
-	/**
-	 * @brief Do not instantiate ConfigFile classes directly.
-	 * Instead, use ConfigFile::openForReading() or ConfigFile::openForWriting() to retrieve an instance of this class.
-	 */
-	ConfigFile();
-
 	struct ConfigFileImpl;
 	/**
 	 * @brief A pointer to the private variables and inner workings of the ConfigFile class.
