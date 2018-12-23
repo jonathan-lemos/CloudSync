@@ -50,7 +50,7 @@ enum ColorValue{
  * std::cout << Color(RED) << "red" << Color(NORMAL) << std::endl;
  * ```
  */
-const char* CS_CONST Color(ColorValue cv);
+const char* Color(ColorValue cv);
 
 /**
  * @brief A stream modifier that sets inverts the background color of all text printed afterwards.
@@ -64,7 +64,7 @@ const char* CS_CONST Color(ColorValue cv);
  * std::cout << Invert(true) << "inverted" << Invert(false) << std::endl;
  * ```
  */
-const char* CS_CONST Invert(bool enabled);
+const char* Invert(bool enabled);
 
 /**
  * @brief Shows or hides the terminal cursor.

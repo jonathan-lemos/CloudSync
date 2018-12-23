@@ -110,6 +110,10 @@ public:
 	 * @return True if the logout was successful, false if not.
 	 */
 	virtual bool logout() = 0;
+
+protected:
+	BaseClient();
+	~BaseClient();
 };
 
 }

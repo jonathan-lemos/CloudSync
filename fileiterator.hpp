@@ -42,6 +42,16 @@ public:
 	 */
 	const char* nextEntry();
 
+	/**
+	 * @brief Returns the current directory name, or nullptr if there isn't one.
+	 */
+	const char* currentDirectory();
+
+	/**
+	 * @brief Skips the current directory.
+	 */
+	void skipDirectory();
+
 private:
 	struct FileIteratorImpl;
 	/**

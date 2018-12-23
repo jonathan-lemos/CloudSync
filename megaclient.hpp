@@ -38,6 +38,7 @@ enum MegaClientErrorCode{
 
 class MegaClient : public BaseClient{
 public:
+	MegaClient();
 	~MegaClient();
 
 	bool login(const char* email, const char* password);
