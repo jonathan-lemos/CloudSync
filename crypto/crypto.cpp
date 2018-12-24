@@ -1,4 +1,4 @@
-/** @file crypto.hpp
+/** @file crypto/crypto.cpp
  * @brief Handles encryption.
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *
@@ -6,12 +6,92 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
+#include "crypto.hpp"
+#include <cryptopp/aes.h>
+#include <cryptopp/blowfish.h>
+#include <cryptopp/camellia.h>
+#include <cryptopp/cast.h>
+#include <cryptopp/ccm.h>
+#include <cryptopp/eax.h>
+#include <cryptopp/gcm.h>
 #include <cryptopp/cryptlib.h>
 #include <cryptopp/modes.h>
-#include <cryptopp/aes.h>
+#include <memory>
+#include <variant>
 
-namespace CloudSync{
+namespace CloudSync::Crypto {
 
-CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor;
+std::variant<CryptoPP::CipherModeDocumentation, CryptoPP::AuthenticatedSymmetricCipherDocumentation> getCipher(enum BlockCipher bc, enum CipherMode cm) {
+	switch (bc) {
+	case AES:
+		switch (cm) {
+			case CCM:
+				return CryptoPP::CCM<CryptoPP::AES>();
+			case CBC:
+				return CryptoPP::CBC_Mode<CryptoPP::AES>();
+			case CFB:
+				return CryptoPP::CFB_Mode<CryptoPP::AES>();
+			case CTR:
+				return CryptoPP::CTR_Mode<CryptoPP::AES>();
+			case EAX:
+				return CryptoPP::EAX<CryptoPP::AES>();
+			case GCM:
+				return CryptoPP::GCM<CryptoPP::AES>();
+		}
+	case BLOWFISH:
+		switch (cm) {
+			case CCM:
+				return CryptoPP::CCM<CryptoPP::Blowfish>();
+			case CBC:
+				return CryptoPP::CBC_Mode<CryptoPP::Blowfish>();
+			case CFB:
+				return CryptoPP::CFB_Mode<CryptoPP::Blowfish>();
+			case CTR:
+				return CryptoPP::CTR_Mode<CryptoPP::Blowfish>();
+			case EAX:
+				return CryptoPP::EAX<CryptoPP::Blowfish>();
+			case GCM:
+				return CryptoPP::GCM<CryptoPP::Blowfish>();
+		}
+	case CAMELLIA:
+		switch (cm) {
+			case CCM:
+				return CryptoPP::CCM<CryptoPP::Camellia>();
+			case CBC:
+				return CryptoPP::CBC_Mode<CryptoPP::Camellia>();
+			case CFB:
+				return CryptoPP::CFB_Mode<CryptoPP::Camellia>();
+			case CTR:
+				return CryptoPP::CTR_Mode<CryptoPP::Camellia>();
+			case EAX:
+				return CryptoPP::EAX<CryptoPP::Camellia>();
+			case GCM:
+				return CryptoPP::GCM<CryptoPP::Camellia>();
+		}
+	case CAST5:
+		switch (cm) {
+			case CCM:
+				return CryptoPP::CCM<CryptoPP::CAST128>();
+			case CBC:
+				return CryptoPP::CBC_Mode<CryptoPP::CAST128>();
+			case CFB:
+				return CryptoPP::CFB_Mode<CryptoPP::CAST128>();
+			case CTR:
+				return CryptoPP::CTR_Mode<CryptoPP::CAST128>();
+			case EAX:
+				return CryptoPP::EAX<CryptoPP::CAST128>();
+			case GCM:
+				return CryptoPP::GCM<CryptoPP::CAST128>();
+		}
+	}
+}
+
+struct Encryptor::EncryptorImpl {
+	CryptoPP::SecBlock<CryptoPP::byte> key;
+	CryptoPP::SecBlock<CryptoPP::byte> iv;
+	CryptoPP::BlockCipherDocumentation cipher;
+	std::variant<CryptoPP::CipherModeDocumentation, CryptoPP::AuthenticatedSymmetricCipherDocumentation> mode;
+};
 
 }
+

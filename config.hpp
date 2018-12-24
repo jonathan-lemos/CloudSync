@@ -89,7 +89,7 @@ public:
 	 *
 	 * @return A reference to a byte vector, or std::nullopt if the key could not be found.
 	 */
-	std::optional<std::reference_wrapper<const std::vector<unsigned char>>> CS_PURE readEntry(const char* key);
+	std::optional<std::reference_wrapper<const std::vector<unsigned char>>> readEntry(const char* key) const;
 
 	/**
 	 * @brief Flushes the current unwritten changes to the buffer.
