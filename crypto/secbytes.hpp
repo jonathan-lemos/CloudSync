@@ -17,11 +17,18 @@
  * When this class is destructed, its contents are wiped.
  */
 class SecBytes {
+public:
 	/**
 	 * @brief The default constructor for SecBytes.
 	 * The contents are empty in this case.
 	 */
 	SecBytes();
+
+	/**
+	 * @brief Constructs a SecBytes with the given capacity.
+	 * The initial contents are not initialized.
+	 */
+	SecBytes(size_t capacity);
 
 	/**
 	 * @brief Constructs a SecBytes class out of the given data.
@@ -64,6 +71,12 @@ class SecBytes {
 	size_t size() const;
 
 	/**
+	 * @brief Resizes the SecBytes block.
+	 * Any new data allocated is not initialized.
+	 */
+	void resize(size_t capacity);
+
+	/**
 	 * @brief Move assignment operator.
 	 */
 	SecBytes& operator=(SecBytes&& other);
@@ -76,10 +89,10 @@ class SecBytes {
 	/**
 	 * @brief Array operator that gets the n'th element of this SecBytes.
 	 *
-	 * @return The value of the nth byte of this SecBytes. Note that this is not a reference.
+	 * @return A reference to the nth byte of this SecBytes.
 	 * @exception std::out_of_range The element you are trying to access is out of range of the array.
 	 */
-	unsigned char operator[](size_t index) const;
+	unsigned char& operator[](size_t index) const;
 
 	/**
 	 * @brief Adds two SecBytes classes together, returning a new SecBytes which is a concatenation of their contents.

@@ -9,12 +9,17 @@
 #include "secbytes.hpp"
 #include <cryptopp/secblock.h>
 #include <cstring>
+#include <string>
 
 struct SecBytes::SecBytesImpl {
 	CryptoPP::SecByteBlock s;
 };
 
 SecBytes::SecBytes(): impl(std::make_unique<SecBytesImpl>()) {}
+
+SecBytes::SecBytes(size_t capacity): impl(std::make_unique<SecBytesImpl>()) {
+	this->impl->s.resize(capacity);
+}
 
 SecBytes::SecBytes(const void* data, size_t data_len): impl(std::make_unique<SecBytesImpl>()) {
 	std::memcpy(&(this->impl->s[0]), data, data_len);
@@ -42,6 +47,10 @@ size_t SecBytes::size() const {
 	return this->impl->s.size();
 }
 
+void SecBytes::resize(size_t capacity) {
+	this->impl->s.resize(capacity);
+}
+
 SecBytes& SecBytes::operator=(SecBytes&& other) {
 	this->impl = std::move(other.impl);
 	return *this;
@@ -52,7 +61,10 @@ SecBytes& SecBytes::operator=(const SecBytes& other) {
 	return *this;
 }
 
-unsigned char SecBytes::operator[](size_t index) const {
+unsigned char& SecBytes::operator[](size_t index) const {
+	if (index >= this->size()) {
+		throw std::out_of_range(std::string("Size = ") + std::to_string(this->size()) + ". Index = " + std::to_string(index) + ".");
+	}
 	return this->impl->s[index];
 }
 

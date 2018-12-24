@@ -15,20 +15,24 @@
 
 namespace CloudSync::Crypto {
 
+/**
+ * @brief The type of key derivation function to use.
+ */
 enum KDFType {
-	ARGON2 = 0,
 	HKDF = 1,
 	PBKDF2 = 2,
 	SCRYPT = 3,
 };
 
+/**
+ * The type of hash function to use.
+ */
 enum HashType {
 	RIPEMD256 = 0,
-	MD5 = 1,
-	SHA1 = 2,
-	SHA256 = 3,
-	SHA3 = 4,
-	SHA512 = 5,
+	SHA1 = 1,
+	SHA256 = 2,
+	SHA3 = 3,
+	SHA512 = 4,
 };
 
 /**
