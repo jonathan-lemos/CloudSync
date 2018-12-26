@@ -82,3 +82,7 @@ SecBytes& SecBytes::operator+=(const SecBytes& other) {
 bool SecBytes::operator==(const SecBytes& other) const {
 	return this->impl->s == other.impl->s;
 }
+
+bool SecBytes::operator!=(const SecBytes& other) const {
+	return this->impl->s != other.impl->s;
+}

@@ -75,6 +75,13 @@ const char* Invert(bool enabled);
 void ShowCursor(bool enabled);
 
 /**
+ * @brief Enables/disables echo.
+ *
+ * @param enable True to enable echo, false to disable it.
+ */
+void echo(bool enabled);
+
+/**
  * @brief Moves the cursor to the coordinate {x, y}
  * The coordinate {0, 0} points to the top-left of the screen.
  * If stdout or stderr does not point to a tty, this function is a no-op.

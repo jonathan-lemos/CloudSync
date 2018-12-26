@@ -1,5 +1,5 @@
-/** @file crypto/crypto.cpp
- * @brief Handles encryption.
+/** @file crypto/symmetric.cpp
+ * @brief Handles symmetric encryption.
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *
  * This software may be modified and distributed under the terms
@@ -7,6 +7,7 @@
  */
 
 #include "crypto.hpp"
+#include "password.hpp"
 #include <cryptopp/aes.h>
 #include <cryptopp/blowfish.h>
 #include <cryptopp/camellia.h>
@@ -87,11 +88,16 @@ std::variant<CryptoPP::CipherModeDocumentation, CryptoPP::AuthenticatedSymmetric
 }
 
 struct Encryptor::EncryptorImpl {
-	CryptoPP::SecBlock<CryptoPP::byte> key;
-	CryptoPP::SecBlock<CryptoPP::byte> iv;
+	SecBytes key;
+	SecBytes iv;
 	CryptoPP::BlockCipherDocumentation cipher;
 	std::variant<CryptoPP::CipherModeDocumentation, CryptoPP::AuthenticatedSymmetricCipherDocumentation> mode;
 };
+
+Encryptor::Encryptor(SecBytes password, BlockCipher bc, int keySize, CipherMode cb): impl(std::make_unique<EncryptorImpl>()) {
+	this->cipher = getCipher(bc, cb);
+	std::pair<SecBytes, SecBytes> sp = DeriveKeypair(password);
+}
 
 }
 

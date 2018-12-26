@@ -1,13 +1,13 @@
-/** @file crypto/crypto.hpp
- * @brief Handles encryption.
+/** @file crypto/symmetric.hpp
+ * @brief Handles symmetric encryption.
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *
  * This software may be modified and distributed under the terms
  * of the MIT license.  See the LICENSE file for details.
  */
 
-#ifndef __CS_CRYPTO_HPP
-#define __CS_CRYPTO_HPP
+#ifndef __CS_CRYPTO_SYMMETRIC_HPP
+#define __CS_CRYPTO_SYMMETRIC_HPP
 
 #include "secbytes.hpp"
 #include <memory>

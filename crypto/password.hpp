@@ -9,8 +9,10 @@
 #ifndef __CS_CRYPTO_PASSWORD_HPP
 #define __CS_CRYPTO_PASSWORD_HPP
 
+#include "../attribute.hpp"
 #include "secbytes.hpp"
 #include <memory>
+#include <optional>
 #include <utility>
 
 namespace CloudSync::Crypto {
@@ -46,7 +48,7 @@ enum HashType {
  *
  * @return A pair containing the Key (first) and IV (second).
  */
-std::pair<SecBytes, SecBytes> DeriveKeypair(SecBytes password, size_t keyLen, size_t ivLen, KDFType kt = HKDF, HashType ht = SHA256);
+std::pair<SecBytes, SecBytes> CS_PURE DeriveKeypair(SecBytes password, size_t keyLen, size_t ivLen, KDFType kt = HKDF, HashType ht = SHA256);
 
 /**
  * @brief Asks the user for a password and derives a key/iv pair from it.
@@ -58,9 +60,9 @@ std::pair<SecBytes, SecBytes> DeriveKeypair(SecBytes password, size_t keyLen, si
  * @param kt The Key Derivation Function to use. By default this is HKDF.
  * @param ht The hash function to use while deriving. By default this is SHA256.
  *
- * @return A pair containing the Key (first) and IV (second).
+ * @return A pair containing the Key (first) and IV (second), or std::nullopt if the second password does not match the first.
  */
-std::pair<SecBytes, SecBytes> StdinKeypair(const char* prompt, const char* verify_prompt, size_t keyLen, size_t ivLen, KDFType kt = HKDF, HashType ht = SHA256);
+std::optional<std::pair<SecBytes, SecBytes>> StdinKeypair(const char* prompt, const char* verify_prompt, size_t keyLen, size_t ivLen, KDFType kt = HKDF, HashType ht = SHA256);
 
 }
 

@@ -14,6 +14,7 @@
 #include <cryptopp/scrypt.h>
 #include <cryptopp/sha.h>
 #include <cryptopp/sha3.h>
+#include <iostream>
 
 namespace CloudSync::Crypto {
 
@@ -60,6 +61,44 @@ std::pair<SecBytes, SecBytes> DeriveKeypair(SecBytes password, size_t keyLen, si
 	key = SecBytes(buf.data(), keyLen);
 	iv = SecBytes(buf.data() + keyLen, ivLen);
 	return std::make_pair(key, iv);
+}
+
+std::optional<std::pair<SecBytes, SecBytes>> StdinKeypair(const char* prompt, const char* verify_prompt, size_t keyLen, size_t ivLen, KDFType kt, HashType ht) {
+	constexpr size_t bufLen = 256;
+	SecBytes input;
+	SecBytes buf;
+	std::pair<SecBytes, SecBytes> ret;
+
+	Terminal::echo(false);
+	std::cout << prompt;
+	do {
+		buf.resize(bufLen);
+		fgets(reinterpret_cast<char*>(buf.data()), bufLen, stdin);
+		buf.resize(std::strlen(reinterpret_cast<char*>(buf.data())));
+		input += buf;
+	} while (buf.size() == bufLen - 1);
+	Terminal::echo(true);
+
+	ret = DeriveKeypair(input, keyLen, ivLen, kt, ht);
+	if (!verify_prompt) {
+		return ret;
+	}
+	input.resize(0);
+
+	Terminal::echo(false);
+	std::cout << prompt;
+	do {
+		buf.resize(bufLen);
+		fgets(reinterpret_cast<char*>(buf.data()), bufLen, stdin);
+		buf.resize(std::strlen(reinterpret_cast<char*>(buf.data())));
+		input += buf;
+	} while (buf.size() == bufLen - 1);
+	Terminal::echo(true);
+
+	std::pair<SecBytes, SecBytes> tmp = DeriveKeypair(input, keyLen, ivLen, kt, ht);
+	if (ret.first != tmp.first || ret.second != tmp.second) {
+		return std::nullopt;
+	}
 }
 
 }

@@ -72,8 +72,15 @@ const char* Invert(bool enabled){
 	}
 }
 
-void ShowCursor(bool enable){
+void ShowCursor(bool enabled){
 	std::cout << (enable ? "\033[?25h" : "\033[?25l");
+}
+
+void echo(bool enabled) {
+	struct termios t;
+	tcgetattr(STDIN_FILENO, &t);
+	t.c_lflag = (t.c_lflag & ~(ECHO)) | (enabled ? ECHO : 0);
+	tcsetattr(STDIN_FILENO, TCSANOW, &t);
 }
 
 void MoveCursor(size_t row, size_t col){

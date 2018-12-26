@@ -109,6 +109,11 @@ public:
 	 */
 	bool operator==(const SecBytes& other) const;
 
+	/**
+	 * @brief Returns truw if two SecBytes classes have different contents, false if not.
+	 */
+	bool operator!=(const SecBytes& other) const;
+
 private:
 	struct SecBytesImpl;
 	std::unique_ptr<SecBytesImpl> impl;
