@@ -18,7 +18,7 @@ enum BlockCipher {
 	AES = 0,
 	BLOWFISH = 1,
 	CAMELLIA = 2,
-	CAST5 = 3,
+	CAST6 = 3,
 	RIJNDAEL = 0,
 };
 
