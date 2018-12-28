@@ -32,8 +32,11 @@ enum CipherMode {
 };
 
 class Encryptor {
-	Encryptor(SecBytes password, BlockCipher bc = AES, int keySize = 256, CipherMode cb = GCM);
-	Encryptor(SecBytes key, SecBytes iv, BlockCipher bc = AES, int keySize = 256, CipherMode cb = GCM);
+	Encryptor(const char* password, BlockCipher bc = AES, int keySize = 256, CipherMode cb = GCM);
+	Encryptor(const char* key, const SecBytes& iv, BlockCipher bc = AES, int keySize = 256, CipherMode cb = GCM);
+	void encryptData(const char* in, size_t inLen, char* out, size_t outLen);
+	void encryptFile(const char* filenameIn, const char* filenameOut);
+	void encryptFile(const char* filenameInOut);
 	~Encryptor();
 
 private:

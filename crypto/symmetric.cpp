@@ -6,8 +6,9 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
-#include "password.hpp"
 #include "symmetric.hpp"
+#include "../filetools.hpp"
+#include "password.hpp"
 #include <cryptopp/aes.h>
 #include <cryptopp/blowfish.h>
 #include <cryptopp/camellia.h>
@@ -17,6 +18,7 @@
 #include <cryptopp/gcm.h>
 #include <cryptopp/cryptlib.h>
 #include <cryptopp/modes.h>
+#include <fstream>
 #include <memory>
 #include <variant>
 
@@ -164,7 +166,7 @@ std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP
 		case GCM:
 			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::GCM<CryptoPP::Camellia>::Decryption());
 		}
-	case CAST5:
+	case CAST6:
 		switch (cm) {
 		case CCM:
 			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::CCM<CryptoPP::CAST256>::Decryption());
@@ -198,8 +200,7 @@ int getBlockSize(BlockCipher bc) {
 struct Encryptor::EncryptorImpl {
 	SecBytes key;
 	SecBytes iv;
-	int keyLen;
-	std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipherDocumentation>> mode;
+	std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipherBase>> mode;
 };
 
 bool validateKeyLen(int keyLen, BlockCipher bc) {
@@ -207,11 +208,73 @@ bool validateKeyLen(int keyLen, BlockCipher bc) {
 	return keyLen == 128 || keyLen == 192 || keyLen == 256;
 }
 
-Encryptor::Encryptor(SecBytes password, BlockCipher bc, int keyLen, CipherMode cb): impl(std::make_unique<EncryptorImpl>()) {
+Encryptor::Encryptor(const char* password, BlockCipher bc, int keyLen, CipherMode cb): impl(std::make_unique<EncryptorImpl>()) {
 	std::pair<SecBytes, SecBytes> keyPair = DeriveKeypair(password, keyLen, getBlockSize(bc));
 	if (!validateKeyLen(keyLen, bc)) {
 		throw std::logic_error("Key length " + std::to_string(keyLen) + " cannot be used with block cipher " + bcToString(bc));
 	}
+	this->impl->key = keyPair.first;
+	this->impl->iv = keyPair.second;
+	this->impl->mode = getEncCipher(bc, cb);
+}
+
+void Encryptor::encryptData(const unsigned char* in, size_t inLen, unsigned char* out, size_t outLen) {
+	const auto processCipherModeBase = [this](const unsigned char* in, size_t inLen, unsigned char* out) {
+		std::get<CryptoPP::CipherModeBase>(this->impl->mode).ProcessData(out, in, inLen);
+	};
+
+	const auto processAuthenticatedSymmetricCipherBase = [this](const unsigned char* in, size_t inLen, unsigned char* out) {
+		std::get<CryptoPP::AuthenticatedSymmetricCipherBase>(this->impl->mode).ProcessData(out, in, inLen);
+	};
+
+	if (inLen != outLen) {
+		throw new std::runtime_error("inLen (" + std::to_string(inLen) + ") does not equal outLen (" + std::to_string(outLen) + ")");
+	}
+
+	if (std::holds_alternative<CryptoPP::CipherModeBase>(this->impl->mode)) {
+		processCipherModeBase(in, inLen, out);
+	}
+	else {
+		processAuthenticatedSymmetricCipherBase(in, inLen, out);
+	}
+}
+
+void Encryptor::encryptFile(const char* filenameIn, const char* filenameOut) {
+	std::ifstream ifs;
+	std::ofstream ofs;
+
+	ifs.open(filenameIn);
+	if (!ifs) {
+		throw std::runtime_error(std::string("Failed to open input file \"") + filenameIn + "\" (" + std::strerror(errno) + ")");
+	}
+	ofs.open(filenameOut);
+	if (!ofs) {
+		throw std::runtime_error(std::string("Failed to open output file \"") + filenameOut + "\" (" + std::strerror(errno) + ")");
+	}
+
+	while (ifs && ifs.peek() != EOF) {
+		char buf[65536];
+		size_t len = ifs.readsome(buf, sizeof(buf));
+		this->encryptData(buf, len, buf, len);
+		ofs.write(buf, len);
+	}
+
+	if (!ifs) {
+		throw std::runtime_error(std::string("Input file I/O error: ") + std::strerror(errno));
+	}
+	if (!ofs) {
+		throw std::runtime_error(std::string("Output file I/O error: ") + std::strerror(errno));
+	}
+}
+
+void Encryptor::encryptFile(const char* filenameInOut) {
+	std::ifstream ifs;
+	std::optional<std::pair<std::string, std::fstream>> tmpFile = File::openTmp();
+	if (!tmpFile) {
+		throw std::runtime_error("Failed to create temporary file");
+	}
+	this->encryptFile(filenameInOut, tmpFile->first.c_str());
+
 }
 
 }
