@@ -31,17 +31,17 @@ enum CipherMode {
 	GCM = 5,
 };
 
-class Encryptor {
-	Encryptor(const char* password, BlockCipher bc = AES, int keySize = 256, CipherMode cb = GCM);
-	Encryptor(const char* key, const SecBytes& iv, BlockCipher bc = AES, int keySize = 256, CipherMode cb = GCM);
-	void encryptData(const char* in, size_t inLen, char* out, size_t outLen);
+class Symmetric {
+	Symmetric(const char* password, BlockCipher bc = AES, int keySize = 256, CipherMode cb = GCM);
+	Symmetric(const char* key, const SecBytes& iv, BlockCipher bc = AES, int keySize = 256, CipherMode cb = GCM);
+	void encryptData(const unsigned char* in, size_t inLen, unsigned char* out, size_t outLen);
 	void encryptFile(const char* filenameIn, const char* filenameOut);
 	void encryptFile(const char* filenameInOut);
-	~Encryptor();
+	~Symmetric();
 
 private:
-	struct EncryptorImpl;
-	std::unique_ptr<EncryptorImpl> impl;
+	struct SymmetricImpl;
+	std::unique_ptr<SymmetricImpl> impl;
 };
 
 }

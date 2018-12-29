@@ -40,21 +40,44 @@ std::optional<uint64_t> fileSize(const char* path) {
 	return st.st_size;
 }
 
-std::optional<std::pair<std::string, std::fstream>> openTmp() {
+struct TmpFile::TmpFileImpl {
+	std::fstream fs;
+	std::string fname;
+};
+
+TmpFile::TmpFile(): impl(std::make_unique<TmpFileImpl>()) {
 	char tmpName[] = "/tmp/tmp_XXXXXX";
 	int fd;
 	if ((fd = mkstemp(tmpName)) < 0) {
-		return std::nullopt;
+		throw std::runtime_error(std::string("Failed creating temporary file (") + std::strerror(errno) + ")");
 	}
-
-	std::fstream f;
-	f.open(tmpName, std::ios::in | std::ios::out | std::ios::binary);
+	this->impl->fname = std::string(tmpName);
+	this->impl->fs.open(tmpName);
 	close(fd);
-	if (!f.good()) {
-		return std::nullopt;
+	if (!this->impl->fs) {
+		throw std::runtime_error(std::string("Failed opening temporary file (") + std::strerror(errno) + ")");
 	}
+}
 
-	return std::make_pair(std::string(tmpName), f);
+TmpFile::~TmpFile() {
+	this->impl->fs.close();
+	std::remove(this->impl->fname.c_str());
+}
+
+std::fstream& TmpFile::fs() {
+	return this->impl->fs;
+}
+
+const char* TmpFile::name() {
+	return this->impl->fname.c_str();
+}
+
+void TmpFile::refresh() {
+	this->impl->fs.close();
+	this->impl->fs.open(this->impl->fname.c_str());
+	if (!this->impl->fs) {
+		throw std::runtime_error("Failed to refresh temporary file \"" + this->impl->fname + "\" (" + std::strerror(errno) + ")");
+	}
 }
 
 }

@@ -12,12 +12,13 @@
 #include "attribute.hpp"
 #include <cstdint>
 #include <fstream>
+#include <memory>
 #include <optional>
 
 namespace CloudSync::File {
 
 /**
- * Checks if a file exists.
+ * @brief Checks if a file exists.
  *
  * @param path The path to check.
  *
@@ -28,7 +29,7 @@ namespace CloudSync::File {
 bool fileExists(const char* path);
 
 /**
- * Checks if a directory exists.
+ * @brief Checks if a directory exists.
  *
  * @param path The path to check.
  *
@@ -39,7 +40,7 @@ bool fileExists(const char* path);
 bool directoryExists(const char* path);
 
 /**
- * Returns the size of a file.
+ * @brief Returns the size of a file.
  *
  * @param path Path to a file.
  *
@@ -49,12 +50,43 @@ bool directoryExists(const char* path);
 std::optional<uint64_t> fileSize(const char* path);
 
 /**
- * Opens a temporary file and returns its name and fstream.
- *
- * @return The filename and fstream of the temp file, or std::nullopt if there was an error.
- * @see std::strerror()
+ * @brief Class that holds a temporary file.
  */
-std::optional<std::pair<std::string, std::fstream>> openTmp();
+class TmpFile {
+public:
+	/**
+	 * @brief Constructs a temporary file.
+	 * The name of the temporary file can be retrieved with TmpFile::name().
+	 * The file stream of this file can be retrieved with TmpFile::fs().
+	 *
+	 * It is constructed in the default temporary directory for this system.
+	 *
+	 * @exception std::runtime_error There was an error creating the file.
+	 */
+	TmpFile();
+	/**
+	 * @brief Destructs a temporary file.
+	 * When this fires the file is deleted.
+	 */
+	~TmpFile();
+	/**
+	 * @brief Returns the internal fstream of this TmpFile.
+	 * If the file is edited through outside sources, it must be refreshed with TmpFile::refresh().
+	 */
+	std::fstream& fs();
+	/**
+	 * @brief Returns the filename of this TmpFile.
+	 */
+	const char* name();
+	/**
+	 * @brief Re-initializes the internal fstream.
+	 * This is necessary if the internal fstream is closed or its file is edited through outside sources.
+	 */
+	void refresh();
+private:
+	struct TmpFileImpl;
+	std::unique_ptr<TmpFileImpl> impl;
+};
 
 }
 

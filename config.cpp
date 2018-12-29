@@ -83,7 +83,7 @@ struct ConfigFile::ConfigFileImpl {
 	 *
 	 * @param path The path to create the file in.
 	 * If a file already exists at this path, it will be overwritten on success.
-	 * On failure this file is untouched unless the thrown exception says otherwise.
+	 * On failure this file is untouched.
 	 *
 	 * @exception std::runtime_error There was an I/O error writing to the file.
 	 */
@@ -94,12 +94,9 @@ struct ConfigFile::ConfigFileImpl {
 		}
 
 		// Create a temp file so if there are errors, the original file is untouched.
-		std::optional<std::pair<std::string, std::fstream>> tmpFile = File::openTmp();
-		// If the file failed to open.
-		if (!tmpFile) {
-			throw std::runtime_error(std::string("Error opening file \"") + path + " (" + std::strerror(errno) + ")");
-		}
-		std::fstream& fs = tmpFile.value().second;
+		File::TmpFile tmpFileBuf;
+		File::TmpFile tmpFileSave;
+		std::fstream& fs = tmpFileBuf.fs();
 
 		fs.write(CF_HEADER, strlen(CF_HEADER));
 		std::for_each(this->entries.begin(), this->entries.end(), [&fs](const std::pair<std::string, std::vector<unsigned char>>& elem){
@@ -121,9 +118,15 @@ struct ConfigFile::ConfigFileImpl {
 		}
 
 		// Finally, replace the old file with the new one.
-		std::remove(this->path);
-		if (std::rename(tmpFile.value().first.c_str(), this->path) != 0) {
-			throw std::runtime_error(std::string("Failed to rename temporary file \"") + tmpFile.value().first + " to final output \"" + this->path + " (" + std::strerror(errno) + "). The original file is corrupt.");
+		tmpFileSave.fs().close();
+		std::remove(tmpFileSave.name());
+		if (std::rename(this->path, tmpFileSave.name()) != 0) {
+			throw std::runtime_error(std::string("Failed to move old file to temporary directory (") + std::strerror(errno) + ")");
+		}
+
+		if (std::rename(tmpFileBuf.name(), this->path) != 0) {
+			std::rename(tmpFileSave.name(), this->path);
+			throw std::runtime_error(std::string("Failed to rename temporary file to final output (") + std::strerror(errno) + ")");
 		}
 
 		this->pending = false;
@@ -203,7 +206,7 @@ ConfigFile& ConfigFile::writeEntry(const char* key, void* data, uint64_t data_le
 	return *this;
 }
 
-std::optional<std::reference_wrapper<const std::vector<unsigned char>>> CS_PURE ConfigFile::readEntry(const char* key) {
+std::optional<std::reference_wrapper<const std::vector<unsigned char>>> CS_PURE ConfigFile::readEntry(const char* key) const {
 	// Since the list is sorted, we can use binary search here.
 	size_t left = 0;
 	size_t right = this->impl->entries.size() - 1;

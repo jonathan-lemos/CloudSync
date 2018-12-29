@@ -197,7 +197,7 @@ int getBlockSize(BlockCipher bc) {
 	}
 }
 
-struct Encryptor::EncryptorImpl {
+struct Symmetric::SymmetricImpl {
 	SecBytes key;
 	SecBytes iv;
 	std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipherBase>> mode;
@@ -208,7 +208,7 @@ bool validateKeyLen(int keyLen, BlockCipher bc) {
 	return keyLen == 128 || keyLen == 192 || keyLen == 256;
 }
 
-Encryptor::Encryptor(const char* password, BlockCipher bc, int keyLen, CipherMode cb): impl(std::make_unique<EncryptorImpl>()) {
+Symmetric::Symmetric(const char* password, BlockCipher bc, int keyLen, CipherMode cb): impl(std::make_unique<SymmetricImpl>()) {
 	std::pair<SecBytes, SecBytes> keyPair = DeriveKeypair(password, keyLen, getBlockSize(bc));
 	if (!validateKeyLen(keyLen, bc)) {
 		throw std::logic_error("Key length " + std::to_string(keyLen) + " cannot be used with block cipher " + bcToString(bc));
@@ -218,7 +218,7 @@ Encryptor::Encryptor(const char* password, BlockCipher bc, int keyLen, CipherMod
 	this->impl->mode = getEncCipher(bc, cb);
 }
 
-void Encryptor::encryptData(const unsigned char* in, size_t inLen, unsigned char* out, size_t outLen) {
+void Symmetric::encryptData(const unsigned char* in, size_t inLen, unsigned char* out, size_t outLen) {
 	const auto processCipherModeBase = [this](const unsigned char* in, size_t inLen, unsigned char* out) {
 		std::get<CryptoPP::CipherModeBase>(this->impl->mode).ProcessData(out, in, inLen);
 	};
@@ -239,7 +239,7 @@ void Encryptor::encryptData(const unsigned char* in, size_t inLen, unsigned char
 	}
 }
 
-void Encryptor::encryptFile(const char* filenameIn, const char* filenameOut) {
+void Symmetric::encryptFile(const char* filenameIn, const char* filenameOut) {
 	std::ifstream ifs;
 	std::ofstream ofs;
 
@@ -253,10 +253,10 @@ void Encryptor::encryptFile(const char* filenameIn, const char* filenameOut) {
 	}
 
 	while (ifs && ifs.peek() != EOF) {
-		char buf[65536];
-		size_t len = ifs.readsome(buf, sizeof(buf));
+		unsigned char buf[65536];
+		size_t len = ifs.readsome(reinterpret_cast<char*>(buf), sizeof(buf));
 		this->encryptData(buf, len, buf, len);
-		ofs.write(buf, len);
+		ofs.write(reinterpret_cast<char*>(buf), len);
 	}
 
 	if (!ifs) {
@@ -267,14 +267,23 @@ void Encryptor::encryptFile(const char* filenameIn, const char* filenameOut) {
 	}
 }
 
-void Encryptor::encryptFile(const char* filenameInOut) {
+void Symmetric::encryptFile(const char* filenameInOut) {
 	std::ifstream ifs;
-	std::optional<std::pair<std::string, std::fstream>> tmpFile = File::openTmp();
-	if (!tmpFile) {
-		throw std::runtime_error("Failed to create temporary file");
-	}
-	this->encryptFile(filenameInOut, tmpFile->first.c_str());
+	File::TmpFile tmpFileBuf;
+	File::TmpFile tmpFileSave;
 
+	tmpFileBuf.fs().close();
+	std::remove(tmpFileBuf.name());
+	this->encryptFile(filenameInOut, tmpFileBuf.name());
+
+	if (std::rename(filenameInOut, tmpFileSave.name()) != 0) {
+		throw std::runtime_error(std::string("Failed to move old file to temporary directory (") + std::strerror(errno) + ")");
+	}
+
+	if (std::rename(tmpFileBuf.name(), filenameInOut) != 0) {
+		std::rename(tmpFileSave.name(), filenameInOut);
+		throw std::runtime_error(std::string("Failed to rename temporary file to final output (") + std::strerror(errno) + ")");
+	}
 }
 
 }
