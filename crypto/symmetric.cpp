@@ -242,6 +242,7 @@ void Symmetric::encryptData(const unsigned char* in, size_t inLen, unsigned char
 void Symmetric::encryptFile(const char* filenameIn, const char* filenameOut) {
 	std::ifstream ifs;
 	std::ofstream ofs;
+	size_t len;
 
 	ifs.open(filenameIn);
 	if (!ifs) {
@@ -252,12 +253,12 @@ void Symmetric::encryptFile(const char* filenameIn, const char* filenameOut) {
 		throw std::runtime_error(std::string("Failed to open output file \"") + filenameOut + "\" (" + std::strerror(errno) + ")");
 	}
 
-	while (ifs && ifs.peek() != EOF) {
+	do {
 		unsigned char buf[65536];
-		size_t len = ifs.readsome(reinterpret_cast<char*>(buf), sizeof(buf));
+		len = ifs.readsome(reinterpret_cast<char*>(buf), sizeof(buf));
 		this->encryptData(buf, len, buf, len);
 		ofs.write(reinterpret_cast<char*>(buf), len);
-	}
+	} while (len > 0);
 
 	if (!ifs) {
 		throw std::runtime_error(std::string("Input file I/O error: ") + std::strerror(errno));
