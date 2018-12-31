@@ -182,6 +182,12 @@ void ProgressBar::fail() {
 	this->impl->cv.notify_all();
 }
 
+void ProgressBar::reset() {
+	this->impl->active = false;
+	this->impl->cv.notify_all();
+	this->impl->curProgress = 0;
+}
+
 bool ProgressBar::isActive() {
 	return this->impl->active;
 }

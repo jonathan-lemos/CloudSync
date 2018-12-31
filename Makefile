@@ -13,12 +13,13 @@ CXX:=g++
 CXXFLAGS:=-Wall -Wextra -pedantic -std=c++17 -DPROG_NAME=\"$(NAME)\" -DPROG_VERSION=\"$(VERSION)\" -pthread
 DBGFLAGS:=-g
 RELEASEFLAGS:=-O2
-LDFLAGS=-lmega
+TESTFLAGS:=-lgtest
+LDFLAGS:=-lcryptopp -lmega
 
 DIRECTORIES=$(shell find . -type d 2>/dev/null | sed -re 's|^.*\.git.*$$||;s|.*/sdk.*$$||;s|^.*/tests.*$$||' | awk 'NF')
-FILES=$(foreach directory,$(DIRECTORIES),$(shell ls $(directory) | egrep '^.*\.cpp$$' | sed -re 's|^.*main.cpp$$||;s|^(.+)\.cpp$$|\1|' | awk 'NF'))
-TESTS=$(shell find tests -type f -name '*.cpp' -not -path 'tests/simpletest/*' 2>/dev/null | sed -re 's|^(.+)\.cpp$$|\1|' | awk 'NF')
-FRAMEWORKOBJECTS=tests/simpletest/libsimpletest.a
+FILES=$(foreach directory,$(DIRECTORIES),$(directory)/$(shell ls $(directory) | egrep '^.*\.cpp$$' | sed -re 's|^.*main.cpp$$||;s|^(.+)\.cpp$$|\1|' | awk 'NF'))
+TESTS=$(shell find tests -type f -name '*.cpp' -not -path 'tests/test_ext*' 2>/dev/null | sed -re 's|^(.+)\.cpp$$|\1|' | awk 'NF')
+FRAMEWORKOBJECTS=tests/test_ext.dbg.o
 
 SOURCEFILES=$(foreach file,$(FILES),$(file).cpp)
 OBJECTS=$(foreach file,$(FILES),$(file).o)
@@ -31,14 +32,14 @@ q:
 	@echo $(TESTEXECS)
 
 release: main.o $(OBJECTS)
-	$(CC) -o $(NAME) main.o $(OBJECTS) $(CXXFLAGS) $(LDFLAGS) $(RELEASEFLAGS)
+	$(CC) -o $(NAME) main.o $(OBJECTS) $(RELEASEFLAGS) $(CXXFLAGS) $(LDFLAGS)
 
 debug: main.dbg.o $(DBGOBJECTS)
-	$(CC) -o $(NAME) main.dbg.o $(DBGOBJECTS) $(CXXFLAGS) $(DBGFLAGS) $(LDFLAGS)
+	$(CC) -o $(NAME) main.dbg.o $(DBGOBJECTS) $(DBGFLAGS) $(CXXFLAGS) $(LDFLAGS)
 
 .PHONY: framework
 framework:
-	cd tests/simpletest && $(MAKE) debug
+	$(CC) -o tests/test_ext.dbg.o $(DBGFLAGS) $(CXXFLAGS) $(LDFLAGS)
 
 .PHONY: docs
 docs:
@@ -48,7 +49,7 @@ test: framework $(TESTEXECS) $(TESTOBJECTS)
 	@echo "Made all tests"
 
 %.x: %.dbg.o $(DBGOBJECTS)
-	$(CXX) -o $@ $< $(DBGOBJECTS) $(FRAMEWORKOBJECTS) $(CXXFLAGS) $(DBGFLAGS) $(LDFLAGS)
+	$(CXX) -o $@ $< $(DBGOBJECTS) $(FRAMEWORKOBJECTS) $(DBGFLAGS) $(TESTFLAGS) $(CXXFLAGS) $(LDFLAGS)
 
 %.o: %.cpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS) $(RELEASEFLAGS)
@@ -60,7 +61,6 @@ test: framework $(TESTEXECS) $(TESTOBJECTS)
 clean:
 	rm -f *.o $(NAME) main.c.* vgcore.* $(TESTOBJECTS) $(DBGOBJECTS) $(OBJECTS) $(TESTEXECS) $(FRAMEWORKOBJECTS)
 	rm -rf docs
-	cd tests/simpletest && $(MAKE) clean
 
 .PHONY: linecount
 linecount:

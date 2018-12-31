@@ -15,8 +15,20 @@
 #include <sys/stat.h>
 #include <vector>
 
+#define BUFFER_LEN (65536)
+
 namespace Testing {
 
+/**
+ * @brief Gets the size in bytes of a file.
+ *
+ * @param filename The filename to get the size of.
+ *
+ * @return The size of the file at filename.
+ * Note that this function does not detect folders, and will return 4096 bytes for those.
+ *
+ * @exception std::runtime_error Failed to stat the file.
+ */
 static long fileSize(const char* filename) {
 	struct stat st;
 	if (stat(filename, &st) != 0) {
@@ -38,7 +50,7 @@ void createFile(const char* filename, const void* data, size_t dataLen) {
 
 int compare(const char* filename, const void* data, long dataLen) {
 	long size = fileSize(filename);
-	char buf[65536];
+	char buf[BUFFER_LEN];
 	std::ifstream ifs;
 	size_t len;
 	size_t ptr = 0;
@@ -68,8 +80,8 @@ int compare(const char* filename, const void* data, long dataLen) {
 int compare(const char* filename, const char* otherFilename) {
 	long size1 = fileSize(filename);
 	long size2 = fileSize(otherFilename);
-	char buf1[32768];
-	char buf2[32768];
+	char buf1[BUFFER_LEN];
+	char buf2[BUFFER_LEN];
 	std::ifstream ifs1;
 	std::ifstream ifs2;
 	size_t len1;
@@ -212,7 +224,7 @@ TestEnvironment TestEnvironment::Full(const char* basePath, int nFilesPerDir, in
 		throw std::runtime_error(std::string("Failed to create directory \"") + noaccDir + "\" (" + std::strerror(errno) + ")");
 	}
 	te.impl->dirs.insert(noaccDir);
-	createFile(noaccFile, noaccContents);
+	createFile(noaccFile, noaccContents, std::strlen(noaccContents));
 	if (chmod(noaccFile, 0000) != 0) {
 		throw std::runtime_error(std::string("Failed to chmod \"") + noaccFile + "\" (" + std::string(std::strerror(errno)) + ")");
 	}

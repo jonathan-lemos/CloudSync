@@ -7,8 +7,43 @@
  */
 
 #include "../fileiterator.hpp"
+#include "test_ext.hpp"
 #include <gtest/gtest.h>
 
 TEST(FileIteratorTest, MainTest) {
 	constexpr const char* tmpPath = "tmpPath";
+	Testing::TestEnvironment te = Testing::TestEnvironment::Full(tmpPath);
+	std::unordered_set<std::string> files(te.getFiles());
+	CloudSync::FileIterator fi(tmpPath);
+	const char* current = fi.nextEntry();
+	EXPECT_TRUE(current != nullptr);
+
+	do {
+		EXPECT_TRUE(fi.currentDirectory() == tmpPath);
+		EXPECT_TRUE(files.find(current) != files.end());
+		files.erase(files.find(current));
+		current = fi.nextEntry();
+	} while (current != nullptr);
+
+	EXPECT_TRUE(files.size() == 0);
+}
+
+TEST(SkipDirectoryTest, MainTest) {
+	constexpr const char* tmpPath = "tmpPath";
+	Testing::TestEnvironment te = Testing::TestEnvironment::Full(tmpPath);
+	CloudSync::FileIterator fi(tmpPath);
+	std::string initialDir;
+	const char* current = fi.nextEntry();
+
+	EXPECT_TRUE(current != nullptr);
+	initialDir = fi.currentDirectory();
+	fi.skipDirectory();
+	current = fi.nextEntry();
+	EXPECT_TRUE(current != nullptr);
+
+	do {
+		EXPECT_TRUE(fi.currentDirectory() != initialDir);
+		EXPECT_TRUE(std::string(current).substr(0, initialDir.size()) != initialDir);
+		current = fi.nextEntry();
+	} while (current);
 }

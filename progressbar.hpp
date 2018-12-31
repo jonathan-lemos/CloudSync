@@ -89,6 +89,11 @@ public:
 	void fail();
 
 	/**
+	 * @brief Resets the progress bar to 0 and stops it.
+	 */
+	void reset();
+
+	/**
 	 * Returns if the progress bar is currently displaying.
 	 *
 	 * @return True if the progress bar is displaying, false if not.

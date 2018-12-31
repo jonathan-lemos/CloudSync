@@ -73,7 +73,7 @@ const char* Invert(bool enabled){
 }
 
 void ShowCursor(bool enabled){
-	std::cout << (enable ? "\033[?25h" : "\033[?25l");
+	std::cout << (enabled ? "\033[?25h" : "\033[?25l");
 }
 
 void echo(bool enabled) {
