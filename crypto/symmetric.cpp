@@ -34,6 +34,8 @@ const char* bcToString(BlockCipher bc) {
 		return "Camellia";
 	case CAST6:
 		return "CAST6";
+	default:
+		throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 	}
 }
 
@@ -51,6 +53,8 @@ const char* cmToString(CipherMode cm) {
 		return "EAX";
 	case GCM:
 		return "GCM";
+	default:
+		throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 	}
 }
 
@@ -59,64 +63,73 @@ std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP
 	case AES:
 		switch (cm) {
 		case CCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::CCM<CryptoPP::AES>::Encryption());
+			return std::make_unique<CryptoPP::CCM<CryptoPP::AES>::Encryption>(CryptoPP::CCM<CryptoPP::AES>::Encryption());
 		case CBC:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption());
+			return std::make_unique<CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption>(CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption());
 		case CFB:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption());
+			return std::make_unique<CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption>(CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption());
 		case CTR:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CTR_Mode<CryptoPP::AES>::Encryption());
+			return std::make_unique<CryptoPP::CTR_Mode<CryptoPP::AES>::Encryption>(CryptoPP::CTR_Mode<CryptoPP::AES>::Encryption());
 		case EAX:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::EAX<CryptoPP::AES>::Encryption());
+			return std::make_unique<CryptoPP::EAX<CryptoPP::AES>::Encryption>(CryptoPP::EAX<CryptoPP::AES>::Encryption());
 		case GCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::GCM<CryptoPP::AES>::Encryption());
+			return std::make_unique<CryptoPP::GCM<CryptoPP::AES>::Encryption>(CryptoPP::GCM<CryptoPP::AES>::Encryption());
+		default:
+			throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 		}
 	case BLOWFISH:
 		switch (cm) {
 		case CCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::CCM<CryptoPP::Blowfish>::Encryption());
+			return std::make_unique<CryptoPP::CCM<CryptoPP::Blowfish>::Encryption>(CryptoPP::CCM<CryptoPP::Blowfish>::Encryption());
 		case CBC:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CBC_Mode<CryptoPP::Blowfish>::Encryption());
+			return std::make_unique<CryptoPP::CBC_Mode<CryptoPP::Blowfish>::Encryption>(CryptoPP::CBC_Mode<CryptoPP::Blowfish>::Encryption());
 		case CFB:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CFB_Mode<CryptoPP::Blowfish>::Encryption());
+			return std::make_unique<CryptoPP::CFB_Mode<CryptoPP::Blowfish>::Encryption>(CryptoPP::CFB_Mode<CryptoPP::Blowfish>::Encryption());
 		case CTR:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CTR_Mode<CryptoPP::Blowfish>::Encryption());
+			return std::make_unique<CryptoPP::CTR_Mode<CryptoPP::Blowfish>::Encryption>(CryptoPP::CTR_Mode<CryptoPP::Blowfish>::Encryption());
 		case EAX:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::EAX<CryptoPP::Blowfish>::Encryption());
+			return std::make_unique<CryptoPP::EAX<CryptoPP::Blowfish>::Encryption>(CryptoPP::EAX<CryptoPP::Blowfish>::Encryption());
 		case GCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::GCM<CryptoPP::Blowfish>::Encryption());
+			return std::make_unique<CryptoPP::GCM<CryptoPP::Blowfish>::Encryption>(CryptoPP::GCM<CryptoPP::Blowfish>::Encryption());
+		default:
+			throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 		}
 	case CAMELLIA:
 		switch (cm) {
 		case CCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::CCM<CryptoPP::Camellia>::Encryption());
+			return std::make_unique<CryptoPP::CCM<CryptoPP::Camellia>::Encryption>(CryptoPP::CCM<CryptoPP::Camellia>::Encryption());
 		case CBC:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CBC_Mode<CryptoPP::Camellia>::Encryption());
+			return std::make_unique<CryptoPP::CBC_Mode<CryptoPP::Camellia>::Encryption>(CryptoPP::CBC_Mode<CryptoPP::Camellia>::Encryption());
 		case CFB:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CFB_Mode<CryptoPP::Camellia>::Encryption());
+			return std::make_unique<CryptoPP::CFB_Mode<CryptoPP::Camellia>::Encryption>(CryptoPP::CFB_Mode<CryptoPP::Camellia>::Encryption());
 		case CTR:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CTR_Mode<CryptoPP::Camellia>::Encryption());
+			return std::make_unique<CryptoPP::CTR_Mode<CryptoPP::Camellia>::Encryption>(CryptoPP::CTR_Mode<CryptoPP::Camellia>::Encryption());
 		case EAX:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::EAX<CryptoPP::Camellia>::Encryption());
+			return std::make_unique<CryptoPP::EAX<CryptoPP::Camellia>::Encryption>(CryptoPP::EAX<CryptoPP::Camellia>::Encryption());
 		case GCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::GCM<CryptoPP::Camellia>::Encryption());
+			return std::make_unique<CryptoPP::GCM<CryptoPP::Camellia>::Encryption>(CryptoPP::GCM<CryptoPP::Camellia>::Encryption());
+		default:
+			throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 		}
 	case CAST6:
 		switch (cm) {
 		case CCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::CCM<CryptoPP::CAST256>::Encryption());
+			return std::make_unique<CryptoPP::CCM<CryptoPP::CAST256>::Encryption>(CryptoPP::CCM<CryptoPP::CAST256>::Encryption());
 		case CBC:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CBC_Mode<CryptoPP::CAST256>::Encryption());
+			return std::make_unique<CryptoPP::CBC_Mode<CryptoPP::CAST256>::Encryption>(CryptoPP::CBC_Mode<CryptoPP::CAST256>::Encryption());
 		case CFB:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CFB_Mode<CryptoPP::CAST256>::Encryption());
+			return std::make_unique<CryptoPP::CFB_Mode<CryptoPP::CAST256>::Encryption>(CryptoPP::CFB_Mode<CryptoPP::CAST256>::Encryption());
 		case CTR:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CTR_Mode<CryptoPP::CAST256>::Encryption());
+			return std::make_unique<CryptoPP::CTR_Mode<CryptoPP::CAST256>::Encryption>(CryptoPP::CTR_Mode<CryptoPP::CAST256>::Encryption());
 		case EAX:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::EAX<CryptoPP::CAST256>::Encryption());
+			return std::make_unique<CryptoPP::EAX<CryptoPP::CAST256>::Encryption>(CryptoPP::EAX<CryptoPP::CAST256>::Encryption());
 		case GCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::GCM<CryptoPP::CAST256>::Encryption());
+			return std::make_unique<CryptoPP::GCM<CryptoPP::CAST256>::Encryption>(CryptoPP::GCM<CryptoPP::CAST256>::Encryption());
+		default:
+			throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 		}
 	}
+	throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 }
 
 std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipherBase>> getDecCipher(enum BlockCipher bc, enum CipherMode cm) {
@@ -124,64 +137,73 @@ std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP
 	case AES:
 		switch (cm) {
 		case CCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::CCM<CryptoPP::AES>::Decryption());
+			return std::make_unique<CryptoPP::CCM<CryptoPP::AES>::Decryption>(CryptoPP::CCM<CryptoPP::AES>::Decryption());
 		case CBC:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption());
+			return std::make_unique<CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption>(CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption());
 		case CFB:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption());
+			return std::make_unique<CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption>(CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption());
 		case CTR:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CTR_Mode<CryptoPP::AES>::Decryption());
+			return std::make_unique<CryptoPP::CTR_Mode<CryptoPP::AES>::Decryption>(CryptoPP::CTR_Mode<CryptoPP::AES>::Decryption());
 		case EAX:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::EAX<CryptoPP::AES>::Decryption());
+			return std::make_unique<CryptoPP::EAX<CryptoPP::AES>::Decryption>(CryptoPP::EAX<CryptoPP::AES>::Decryption());
 		case GCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::GCM<CryptoPP::AES>::Decryption());
+			return std::make_unique<CryptoPP::GCM<CryptoPP::AES>::Decryption>(CryptoPP::GCM<CryptoPP::AES>::Decryption());
+		default:
+			throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 		}
 	case BLOWFISH:
 		switch (cm) {
 		case CCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::CCM<CryptoPP::Blowfish>::Decryption());
+			return std::make_unique<CryptoPP::CCM<CryptoPP::Blowfish>::Decryption>(CryptoPP::CCM<CryptoPP::Blowfish>::Decryption());
 		case CBC:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CBC_Mode<CryptoPP::Blowfish>::Decryption());
+			return std::make_unique<CryptoPP::CBC_Mode<CryptoPP::Blowfish>::Decryption>(CryptoPP::CBC_Mode<CryptoPP::Blowfish>::Decryption());
 		case CFB:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CFB_Mode<CryptoPP::Blowfish>::Decryption());
+			return std::make_unique<CryptoPP::CFB_Mode<CryptoPP::Blowfish>::Decryption>(CryptoPP::CFB_Mode<CryptoPP::Blowfish>::Decryption());
 		case CTR:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CTR_Mode<CryptoPP::Blowfish>::Decryption());
+			return std::make_unique<CryptoPP::CTR_Mode<CryptoPP::Blowfish>::Decryption>(CryptoPP::CTR_Mode<CryptoPP::Blowfish>::Decryption());
 		case EAX:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::EAX<CryptoPP::Blowfish>::Decryption());
+			return std::make_unique<CryptoPP::EAX<CryptoPP::Blowfish>::Decryption>(CryptoPP::EAX<CryptoPP::Blowfish>::Decryption());
 		case GCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::GCM<CryptoPP::Blowfish>::Decryption());
+			return std::make_unique<CryptoPP::GCM<CryptoPP::Blowfish>::Decryption>(CryptoPP::GCM<CryptoPP::Blowfish>::Decryption());
+		default:
+			throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 		}
 	case CAMELLIA:
 		switch (cm) {
 		case CCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::CCM<CryptoPP::Camellia>::Decryption());
+			return std::make_unique<CryptoPP::CCM<CryptoPP::Camellia>::Decryption>(CryptoPP::CCM<CryptoPP::Camellia>::Decryption());
 		case CBC:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CBC_Mode<CryptoPP::Camellia>::Decryption());
+			return std::make_unique<CryptoPP::CBC_Mode<CryptoPP::Camellia>::Decryption>(CryptoPP::CBC_Mode<CryptoPP::Camellia>::Decryption());
 		case CFB:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CFB_Mode<CryptoPP::Camellia>::Decryption());
+			return std::make_unique<CryptoPP::CFB_Mode<CryptoPP::Camellia>::Decryption>(CryptoPP::CFB_Mode<CryptoPP::Camellia>::Decryption());
 		case CTR:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CTR_Mode<CryptoPP::Camellia>::Decryption());
+			return std::make_unique<CryptoPP::CTR_Mode<CryptoPP::Camellia>::Decryption>(CryptoPP::CTR_Mode<CryptoPP::Camellia>::Decryption());
 		case EAX:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::EAX<CryptoPP::Camellia>::Decryption());
+			return std::make_unique<CryptoPP::EAX<CryptoPP::Camellia>::Decryption>(CryptoPP::EAX<CryptoPP::Camellia>::Decryption());
 		case GCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::GCM<CryptoPP::Camellia>::Decryption());
+			return std::make_unique<CryptoPP::GCM<CryptoPP::Camellia>::Decryption>(CryptoPP::GCM<CryptoPP::Camellia>::Decryption());
+		default:
+			throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 		}
 	case CAST6:
 		switch (cm) {
 		case CCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::CCM<CryptoPP::CAST256>::Decryption());
+			return std::make_unique<CryptoPP::CCM<CryptoPP::CAST256>::Decryption>(CryptoPP::CCM<CryptoPP::CAST256>::Decryption());
 		case CBC:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CBC_Mode<CryptoPP::CAST256>::Decryption());
+			return std::make_unique<CryptoPP::CBC_Mode<CryptoPP::CAST256>::Decryption>(CryptoPP::CBC_Mode<CryptoPP::CAST256>::Decryption());
 		case CFB:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CFB_Mode<CryptoPP::CAST256>::Decryption());
+			return std::make_unique<CryptoPP::CFB_Mode<CryptoPP::CAST256>::Decryption>(CryptoPP::CFB_Mode<CryptoPP::CAST256>::Decryption());
 		case CTR:
-			return std::make_unique<CryptoPP::CipherModeBase>(CryptoPP::CTR_Mode<CryptoPP::CAST256>::Decryption());
+			return std::make_unique<CryptoPP::CTR_Mode<CryptoPP::CAST256>::Decryption>(CryptoPP::CTR_Mode<CryptoPP::CAST256>::Decryption());
 		case EAX:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::EAX<CryptoPP::CAST256>::Decryption());
+			return std::make_unique<CryptoPP::EAX<CryptoPP::CAST256>::Decryption>(CryptoPP::EAX<CryptoPP::CAST256>::Decryption());
 		case GCM:
-			return std::make_unique<CryptoPP::AuthenticatedSymmetricCipherBase>(CryptoPP::GCM<CryptoPP::CAST256>::Decryption());
+			return std::make_unique<CryptoPP::GCM<CryptoPP::CAST256>::Decryption>(CryptoPP::GCM<CryptoPP::CAST256>::Decryption());
+		default:
+			throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 		}
 	}
+	throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 }
 
 int getBlockSize(BlockCipher bc) {
@@ -194,6 +216,8 @@ int getBlockSize(BlockCipher bc) {
 		return CryptoPP::Camellia::BLOCKSIZE;
 	case CAST6:
 		return CryptoPP::CAST256::BLOCKSIZE;
+	default:
+		throw std::runtime_error("Switch case fell through when all enums have been exhausted.");
 	}
 }
 
@@ -220,18 +244,18 @@ Symmetric::Symmetric(const char* password, BlockCipher bc, int keyLen, CipherMod
 
 void Symmetric::encryptData(const unsigned char* in, size_t inLen, unsigned char* out, size_t outLen) {
 	const auto processCipherModeBase = [this](const unsigned char* in, size_t inLen, unsigned char* out) {
-		std::get<CryptoPP::CipherModeBase>(this->impl->mode).ProcessData(out, in, inLen);
+		std::get<std::unique_ptr<CryptoPP::CipherModeBase>>(this->impl->mode)->ProcessData(out, in, inLen);
 	};
 
 	const auto processAuthenticatedSymmetricCipherBase = [this](const unsigned char* in, size_t inLen, unsigned char* out) {
-		std::get<CryptoPP::AuthenticatedSymmetricCipherBase>(this->impl->mode).ProcessData(out, in, inLen);
+		std::get<std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipherBase>>(this->impl->mode)->ProcessData(out, in, inLen);
 	};
 
 	if (inLen != outLen) {
 		throw new std::runtime_error("inLen (" + std::to_string(inLen) + ") does not equal outLen (" + std::to_string(outLen) + ")");
 	}
 
-	if (std::holds_alternative<CryptoPP::CipherModeBase>(this->impl->mode)) {
+	if (std::holds_alternative<std::unique_ptr<CryptoPP::CipherModeBase>>(this->impl->mode)) {
 		processCipherModeBase(in, inLen, out);
 	}
 	else {

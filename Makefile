@@ -16,9 +16,9 @@ RELEASEFLAGS:=-O2
 TESTFLAGS:=-lgtest
 LDFLAGS:=-lcryptopp -lmega
 
-DIRECTORIES=$(shell find . -type d 2>/dev/null | sed -re 's|^.*\.git.*$$||;s|.*/sdk.*$$||;s|^.*/tests.*$$||' | awk 'NF')
-FILES=$(foreach directory,$(DIRECTORIES),$(directory)/$(shell ls $(directory) | egrep '^.*\.cpp$$' | sed -re 's|^.*main.cpp$$||;s|^(.+)\.cpp$$|\1|' | awk 'NF'))
-TESTS=$(shell find tests -type f -name '*.cpp' -not -path 'tests/test_ext*' 2>/dev/null | sed -re 's|^(.+)\.cpp$$|\1|' | awk 'NF')
+DIRECTORIES=$(shell find . -type d 2>/dev/null -not -path './os*' -not -path 'git/*' | sed -re 's|^.*\.git.*$$||;s|.*/sdk.*$$||;s|^.*/tests.*$$||' | awk 'NF')
+FILES=$(foreach directory,$(DIRECTORIES),$(shell ls $(directory) | egrep '^.*\.cpp$$' | sed -re 's|^.*main.cpp$$||;s|^(.+)\.cpp$$|$(directory)/\1|' | awk 'NF'))
+TESTS=$(shell find tests -type f -name '*.cpp' -not -path './tests/test_ext*' 2>/dev/null | sed -re 's|^(.+)\.cpp$$|\1|' | awk 'NF')
 FRAMEWORKOBJECTS=tests/test_ext.dbg.o
 
 SOURCEFILES=$(foreach file,$(FILES),$(file).cpp)
@@ -29,7 +29,7 @@ TESTEXECS=$(foreach test,$(TESTS),$(test).x)
 
 .PHONY: q
 q:
-	@echo $(TESTEXECS)
+	@echo $(FILES)
 
 release: main.o $(OBJECTS)
 	$(CC) -o $(NAME) main.o $(OBJECTS) $(RELEASEFLAGS) $(CXXFLAGS) $(LDFLAGS)

@@ -33,8 +33,7 @@ enum HashType {
 	RIPEMD256 = 0,
 	SHA1 = 1,
 	SHA256 = 2,
-	SHA3 = 3,
-	SHA512 = 4,
+	SHA512 = 3,
 };
 
 /**

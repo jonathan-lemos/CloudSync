@@ -8,12 +8,13 @@
 
 #include "password.hpp"
 #include "../terminal.hpp"
+// the following import does not work unless this one is present
+#include <cryptopp/algparam.h>
 #include <cryptopp/hkdf.h>
 #include <cryptopp/pwdbased.h>
 #include <cryptopp/ripemd.h>
 #include <cryptopp/scrypt.h>
 #include <cryptopp/sha.h>
-#include <cryptopp/sha3.h>
 #include <iostream>
 
 namespace CloudSync::Crypto {
@@ -23,32 +24,33 @@ static std::unique_ptr<CryptoPP::KeyDerivationFunction> getKdf(KDFType kt, HashT
 	case HKDF:
 		switch (ht) {
 		case RIPEMD256:
-			return std::make_unique<CryptoPP::KeyDerivationFunction>(CryptoPP::HKDF<CryptoPP::RIPEMD256>());
+			return std::make_unique<CryptoPP::HKDF<CryptoPP::RIPEMD256>>(CryptoPP::HKDF<CryptoPP::RIPEMD256>());
 		case SHA1:
-			return std::make_unique<CryptoPP::KeyDerivationFunction>(CryptoPP::HKDF<CryptoPP::SHA1>());
+			return std::make_unique<CryptoPP::HKDF<CryptoPP::SHA1>>(CryptoPP::HKDF<CryptoPP::SHA1>());
 		case SHA256:
-			return std::make_unique<CryptoPP::KeyDerivationFunction>(CryptoPP::HKDF<CryptoPP::SHA256>());
-		case SHA3:
-			return std::make_unique<CryptoPP::KeyDerivationFunction>(CryptoPP::HKDF<CryptoPP::SHA3>());
+			return std::make_unique<CryptoPP::HKDF<CryptoPP::SHA256>>(CryptoPP::HKDF<CryptoPP::SHA256>());
 		case SHA512:
-			return std::make_unique<CryptoPP::KeyDerivationFunction>(CryptoPP::HKDF<CryptoPP::SHA512>());
+			return std::make_unique<CryptoPP::HKDF<CryptoPP::SHA512>>(CryptoPP::HKDF<CryptoPP::SHA512>());
+		default:
+			throw std::runtime_error("Switch statement fell through when all enum cases were covered.");
 		}
 	case PBKDF2:
 		switch (ht) {
 		case RIPEMD256:
-			return std::make_unique<CryptoPP::KeyDerivationFunction>(CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::RIPEMD256>());
+			return std::make_unique<CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::RIPEMD256>>(CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::RIPEMD256>());
 		case SHA1:
-			return std::make_unique<CryptoPP::KeyDerivationFunction>(CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1>());
+			return std::make_unique<CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1>>(CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1>());
 		case SHA256:
-			return std::make_unique<CryptoPP::KeyDerivationFunction>(CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA256>());
-		case SHA3:
-			return std::make_unique<CryptoPP::KeyDerivationFunction>(CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA3>());
+			return std::make_unique<CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA256>>(CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA256>());
 		case SHA512:
-			return std::make_unique<CryptoPP::KeyDerivationFunction>(CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA512>());
+			return std::make_unique<CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA512>>(CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA512>());
+		default:
+			throw std::runtime_error("Switch statement fell through when all enum cases were covered.");
 		}
 	case SCRYPT:
-		return std::make_unique<CryptoPP::KeyDerivationFunction>(CryptoPP::Scrypt());
+		return std::make_unique<CryptoPP::Scrypt>(CryptoPP::Scrypt());
 	}
+	throw std::runtime_error("Switch statement fell through when all enum cases were covered.");
 }
 
 std::pair<SecBytes, SecBytes> DeriveKeypair(SecBytes password, size_t keyLen, size_t ivLen, KDFType kt, HashType ht) {
@@ -99,6 +101,7 @@ std::optional<std::pair<SecBytes, SecBytes>> StdinKeypair(const char* prompt, co
 	if (ret.first != tmp.first || ret.second != tmp.second) {
 		return std::nullopt;
 	}
+	return ret;
 }
 
 }
