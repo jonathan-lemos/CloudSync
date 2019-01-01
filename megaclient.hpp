@@ -36,20 +36,20 @@ enum MegaClientErrorCode{
 	SHOULDNEVERHAPPEN_ERROR
 };
 
-class MegaClient : public BaseClient{
+class MegaClient final : public BaseClient{
 public:
 	MegaClient();
 	~MegaClient();
 
-	bool login(const char* email, const char* password);
-	bool mkdir(const char* dir);
-	std::optional<std::vector<std::string>> readdir(const char* dir);
-	bool stat(const char* path, struct stat* st);
-	bool rename(const char* oldPath, const char* newPath);
-	bool download(const char* cloudPath, const char* diskPath);
-	bool upload(const char* diskPath, const char* cloudPath);
-	bool remove(const char* path);
-	bool logout();
+	virtual bool login(const char* email, const char* password) override;
+	virtual bool mkdir(const char* dir) override;
+	virtual std::optional<std::vector<std::string>> readdir(const char* dir) override;
+	virtual bool stat(const char* path, struct stat* st) override;
+	virtual bool move(const char* oldPath, const char* newPath) override;
+	virtual bool download(const char* cloudPath, const char* diskPath) override;
+	virtual bool upload(const char* diskPath, const char* cloudPath) override;
+	virtual bool remove(const char* path) override;
+	virtual bool logout() override;
 
 	const char* getLastError();
 	MegaClientErrorCode getLastErrorCode();

@@ -12,7 +12,7 @@
 
 TEST(FileIteratorTest, MainTest) {
 	constexpr const char* tmpPath = "tmpPath";
-	Testing::TestEnvironment te = Testing::TestEnvironment::Full(tmpPath);
+	TestExt::TestEnvironment te = TestExt::TestEnvironment::Full(tmpPath);
 	std::unordered_set<std::string> files(te.getFiles());
 	CloudSync::FileIterator fi(tmpPath);
 	const char* current = fi.nextEntry();
@@ -30,7 +30,7 @@ TEST(FileIteratorTest, MainTest) {
 
 TEST(SkipDirectoryTest, MainTest) {
 	constexpr const char* tmpPath = "tmpPath";
-	Testing::TestEnvironment te = Testing::TestEnvironment::Full(tmpPath);
+	TestExt::TestEnvironment te = TestExt::TestEnvironment::Full(tmpPath);
 	CloudSync::FileIterator fi(tmpPath);
 	std::string initialDir;
 	const char* current = fi.nextEntry();
@@ -46,4 +46,9 @@ TEST(SkipDirectoryTest, MainTest) {
 		EXPECT_TRUE(std::string(current).substr(0, initialDir.size()) != initialDir);
 		current = fi.nextEntry();
 	} while (current);
+}
+
+int main(int argc, char** argv) {
+	testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
 }

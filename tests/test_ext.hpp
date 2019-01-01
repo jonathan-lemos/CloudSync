@@ -9,7 +9,7 @@
 #include <memory>
 #include <unordered_set>
 
-namespace Testing {
+namespace TestExt {
 
 /**
  * @brief Creates a file and fills it with the given data.

@@ -339,7 +339,7 @@ bool MegaClient::stat(const char* path, struct stat* st){
 	return true;
 }
 
-bool MegaClient::rename(const char* old_path, const char* new_path){
+bool MegaClient::move(const char* old_path, const char* new_path){
 	std::unique_ptr<mega::MegaNode> nSrc;
 	std::unique_ptr<mega::MegaNode> nDst;
 	std::unique_ptr<mega::MegaNode> nTmp;

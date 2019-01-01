@@ -14,12 +14,11 @@ CXXFLAGS:=-Wall -Wextra -pedantic -std=c++17 -DPROG_NAME=\"$(NAME)\" -DPROG_VERS
 DBGFLAGS:=-g
 RELEASEFLAGS:=-O2
 TESTFLAGS:=-lgtest
-LDFLAGS:=-lcryptopp -lmega
+LDFLAGS:=-lcryptopp -lmega -lstdc++
 
 DIRECTORIES=$(shell find . -type d 2>/dev/null -not -path './os*' -not -path 'git/*' | sed -re 's|^.*\.git.*$$||;s|.*/sdk.*$$||;s|^.*/tests.*$$||' | awk 'NF')
-FILES=$(foreach directory,$(DIRECTORIES),$(shell ls $(directory) | egrep '^.*\.cpp$$' | sed -re 's|^.*main.cpp$$||;s|^(.+)\.cpp$$|$(directory)/\1|' | awk 'NF'))
-TESTS=$(shell find tests -type f -name '*.cpp' -not -path './tests/test_ext*' 2>/dev/null | sed -re 's|^(.+)\.cpp$$|\1|' | awk 'NF')
-FRAMEWORKOBJECTS=tests/test_ext.dbg.o
+FILES=$(foreach directory,$(DIRECTORIES),$(shell ls $(directory) | egrep '^.*\.cpp$$' | sed -re 's|^.*main.cpp$$||;s|^(.+)\.cpp$$|$(directory)/\1|' | awk 'NF')) tests/test_ext
+TESTS=$(shell find tests -type f -name '*.cpp' -not -path 'tests/test_ext*' 2>/dev/null | sed -re 's|^(.+)\.cpp$$|\1|' | awk 'NF')
 
 SOURCEFILES=$(foreach file,$(FILES),$(file).cpp)
 OBJECTS=$(foreach file,$(FILES),$(file).o)
@@ -29,23 +28,19 @@ TESTEXECS=$(foreach test,$(TESTS),$(test).x)
 
 .PHONY: q
 q:
-	@echo $(FILES)
+	@echo $(TESTS)
 
 release: main.o $(OBJECTS)
-	$(CC) -o $(NAME) main.o $(OBJECTS) $(RELEASEFLAGS) $(CXXFLAGS) $(LDFLAGS)
+	$(CXX) -o $(NAME) main.o $(OBJECTS) $(RELEASEFLAGS) $(CXXFLAGS) $(LDFLAGS)
 
 debug: main.dbg.o $(DBGOBJECTS)
-	$(CC) -o $(NAME) main.dbg.o $(DBGOBJECTS) $(DBGFLAGS) $(CXXFLAGS) $(LDFLAGS)
-
-.PHONY: framework
-framework:
-	$(CC) -o tests/test_ext.dbg.o $(DBGFLAGS) $(CXXFLAGS) $(LDFLAGS)
+	$(CXX) -o $(NAME) main.dbg.o $(DBGOBJECTS) $(DBGFLAGS) $(CXXFLAGS) $(LDFLAGS)
 
 .PHONY: docs
 docs:
 	doxygen Doxyfile
 
-test: framework $(TESTEXECS) $(TESTOBJECTS)
+tests: $(TESTEXECS) $(TESTOBJECTS)
 	@echo "Made all tests"
 
 %.x: %.dbg.o $(DBGOBJECTS)

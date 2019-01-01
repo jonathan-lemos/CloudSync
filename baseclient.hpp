@@ -113,7 +113,7 @@ public:
 
 protected:
 	BaseClient();
-	~BaseClient();
+	virtual ~BaseClient() = default;
 };
 
 }

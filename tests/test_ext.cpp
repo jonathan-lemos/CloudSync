@@ -13,11 +13,12 @@
 #include <cstdlib>
 #include <fstream>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <vector>
 
 #define BUFFER_LEN (65536)
 
-namespace Testing {
+namespace TestExt {
 
 /**
  * @brief Gets the size in bytes of a file.
@@ -155,7 +156,9 @@ static std::string makePath(std::vector<const char*> vec) {
 		if (s[s.length() - 1] == '/') {
 			s.resize(s.length() - 1);
 		}
+		s += "/";
 	});
+	s.resize(s.length() - 1);
 	return s;
 }
 
@@ -192,7 +195,7 @@ struct TestEnvironment::TestEnvironmentImpl {
 
 		srand(seed);
 		for (int i = 0; i < nFiles; ++i) {
-			std::string fname = makePath({path, std::string(prefix + std::to_string(i) + suffix).c_str(), suffix});
+			std::string fname = makePath({path, std::string(prefix + std::to_string(i) + suffix).c_str()});
 			size_t len = rand() % (maxFileLen + 1);
 			std::vector<unsigned char> data;
 			data.resize(len);
@@ -230,6 +233,23 @@ TestEnvironment TestEnvironment::Full(const char* basePath, int nFilesPerDir, in
 	}
 
 	return te;
+}
+
+const std::unordered_set<std::string>& TestEnvironment::getFiles() {
+	return this->impl->files;
+}
+
+const std::unordered_set<std::string>& TestEnvironment::getDirs() {
+	return this->impl->dirs;
+}
+
+TestEnvironment::~TestEnvironment() {
+	std::for_each(this->impl->files.begin(), this->impl->files.end(), [](const auto& elem) {
+		std::remove(elem.c_str());
+	});
+	std::for_each(this->impl->dirs.begin(), this->impl->dirs.end(), [](const auto& elem) {
+		rmdir(elem.c_str());
+	});
 }
 
 }
