@@ -7,10 +7,12 @@
  */
 
 #include "test_ext.hpp"
+#include "../cserror.hpp"
 #include <algorithm>
 #include <cstring>
 #include <cerrno>
 #include <cstdlib>
+#include <dirent.h>
 #include <fstream>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -28,12 +30,12 @@ namespace TestExt {
  * @return The size of the file at filename.
  * Note that this function does not detect folders, and will return 4096 bytes for those.
  *
- * @exception std::runtime_error Failed to stat the file.
+ * @exception CsError Failed to stat the file.
  */
 static long fileSize(const char* filename) {
 	struct stat st;
 	if (stat(filename, &st) != 0) {
-		throw std::runtime_error(std::string("Failed to stat \"") + filename + "\" (" + std::strerror(errno) + ")");
+		throw CsError(std::string("Failed to stat \"") + filename + "\" (" + std::strerror(errno) + ")");
 	}
 	return st.st_size;
 }
@@ -41,11 +43,11 @@ static long fileSize(const char* filename) {
 void createFile(const char* filename, const void* data, size_t dataLen) {
 	std::ofstream ofs(filename);
 	if (!ofs) {
-		throw std::runtime_error(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
+		throw CsError(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
 	}
 	ofs.write(reinterpret_cast<const char*>(data), dataLen);
 	if (!ofs) {
-		throw std::runtime_error(std::string("I/O error writing to \"") + filename + "\"");
+		throw CsError(std::string("I/O error writing to \"") + filename + "\"");
 	}
 }
 
@@ -62,7 +64,7 @@ int compare(const char* filename, const void* data, long dataLen) {
 
 	ifs.open(filename);
 	if (!ifs) {
-		throw std::runtime_error(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno));
+		throw CsError(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno));
 	}
 
 	do {
@@ -94,11 +96,11 @@ int compare(const char* filename, const char* otherFilename) {
 
 	ifs1.open(filename);
 	if (!ifs1) {
-		throw std::runtime_error(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
+		throw CsError(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
 	}
 	ifs2.open(otherFilename);
 	if (!ifs2) {
-		throw std::runtime_error(std::string("Failed to open \"") + otherFilename + "\" (" + std::strerror(errno) + ")");
+		throw CsError(std::string("Failed to open \"") + otherFilename + "\" (" + std::strerror(errno) + ")");
 	}
 
 	do {
@@ -174,6 +176,11 @@ struct TestEnvironment::TestEnvironmentImpl {
 	std::unordered_set<std::string> dirs;
 
 	/**
+	 * @brief The base directory of this TestEnvironment.
+	 */
+	std::string basePath;
+
+	/**
 	 * @brief Creates a directory and adds it to the internal dir/file hashsets.
 	 * This directory is filled with files according to the parameters.
 	 *
@@ -189,7 +196,7 @@ struct TestEnvironment::TestEnvironmentImpl {
 	 */
 	void makeDirectory(const char* path, int nFiles = 20, const char* prefix = "test", const char* suffix = ".txt", int maxFileLen = 4096, unsigned seed = 0) {
 		if (mkdir(path, 0755) != 0) {
-			throw std::runtime_error(std::string("Failed to create directory \"") + path + "\" (" + std::strerror(errno) + ")");
+			throw CsError(std::string("Failed to create directory \"") + path + "\" (" + std::strerror(errno) + ")");
 		}
 		this->dirs.insert(path);
 
@@ -210,6 +217,7 @@ TestEnvironment::TestEnvironment(): impl(std::make_unique<TestEnvironmentImpl>()
 
 TestEnvironment TestEnvironment::Basic(const char* basePath, int nFiles, int maxFileLen) {
 	TestEnvironment te;
+	te.impl->basePath = basePath;
 	te.impl->makeDirectory(basePath, nFiles, "test", ".txt", maxFileLen);
 	return te;
 }
@@ -218,18 +226,21 @@ TestEnvironment TestEnvironment::Full(const char* basePath, int nFilesPerDir, in
 	constexpr const char* noaccDir = "noaccess";
 	constexpr const char* noaccFile = "noaccess.txt";
 	constexpr const char* noaccContents = "abcdefg_noaccess";
+	std::string noaccDirPath = makePath({basePath, noaccDir});
+	std::string noaccFilePath = makePath({basePath, noaccDir, noaccFile});
 	TestEnvironment te;
+	te.impl->basePath = basePath;
 	te.impl->makeDirectory(basePath, nFilesPerDir, "test", ".txt", maxFileLen);
-	te.impl->makeDirectory(makePath({basePath, "dir1"}).c_str(), nFilesPerDir, "d1", ".txt", maxFileLen);
-	te.impl->makeDirectory(makePath({basePath, "dir2"}).c_str(), nFilesPerDir, "d2", ".txt", maxFileLen);
-	te.impl->makeDirectory(makePath({basePath, "excl"}).c_str(), nFilesPerDir, "ex", ".txt", maxFileLen);
-	if (mkdir(makePath({basePath, noaccDir}).c_str(), 0000) != 0) {
-		throw std::runtime_error(std::string("Failed to create directory \"") + noaccDir + "\" (" + std::strerror(errno) + ")");
+	te.impl->makeDirectory(makePath({basePath, "dir1"}).c_str(), nFilesPerDir, "d1_", ".txt", maxFileLen);
+	te.impl->makeDirectory(makePath({basePath, "dir2"}).c_str(), nFilesPerDir, "d2_", ".txt", maxFileLen);
+	te.impl->makeDirectory(makePath({basePath, "excl"}).c_str(), nFilesPerDir, "ex_", ".txt", maxFileLen);
+	if (mkdir(noaccDirPath.c_str(), 0000) != 0) {
+		throw CsError(std::string("Failed to create directory \"") + noaccDirPath + "\" (" + std::strerror(errno) + ")");
 	}
-	te.impl->dirs.insert(noaccDir);
-	createFile(noaccFile, noaccContents, std::strlen(noaccContents));
-	if (chmod(noaccFile, 0000) != 0) {
-		throw std::runtime_error(std::string("Failed to chmod \"") + noaccFile + "\" (" + std::string(std::strerror(errno)) + ")");
+	te.impl->dirs.insert(noaccDirPath);
+	createFile(noaccFilePath.c_str(), noaccContents, std::strlen(noaccContents));
+	if (chmod(noaccFilePath.c_str(), 0000) != 0) {
+		throw CsError(std::string("Failed to chmod \"") + noaccFilePath.c_str() + "\" (" + std::string(std::strerror(errno)) + ")");
 	}
 
 	return te;
@@ -243,13 +254,32 @@ const std::unordered_set<std::string>& TestEnvironment::getDirs() {
 	return this->impl->dirs;
 }
 
+void rmRf(const char* basePath) {
+	DIR* dp = opendir(basePath);
+	struct dirent* dnt;
+
+	while ((dnt = readdir(dp)) != nullptr) {
+		std::string path = makePath({basePath, dnt->d_name});
+		struct stat st;
+
+		stat(path.c_str(), &st);
+
+		if (S_ISDIR(st.st_mode)) {
+			chmod(path.c_str(), 0755);
+			rmRf(path.c_str());
+		}
+		else {
+			chmod(path.c_str(), 0644);
+			std::remove(path.c_str());
+		}
+	}
+
+	closedir(dp);
+	rmdir(basePath);
+}
+
 TestEnvironment::~TestEnvironment() {
-	std::for_each(this->impl->files.begin(), this->impl->files.end(), [](const auto& elem) {
-		std::remove(elem.c_str());
-	});
-	std::for_each(this->impl->dirs.begin(), this->impl->dirs.end(), [](const auto& elem) {
-		rmdir(elem.c_str());
-	});
+	rmRf(this->impl->basePath.c_str());
 }
 
 }

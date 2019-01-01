@@ -8,9 +8,10 @@
 
 #include "test_ext.hpp"
 #include <cstring>
-#include <ftw.h>
 #include <fstream>
+#include <ftw.h>
 #include <gtest/gtest.h>
+#include <regex>
 #include <unistd.h>
 
 constexpr const char* testFname1 = "test1.txt";
@@ -19,6 +20,7 @@ constexpr const char* testDir = "testdir";
 
 static int ftw_rm(const char* fpath, const struct stat* st, int typeflag, struct FTW* ftwbuf) {
 	(void)st; (void)typeflag; (void)ftwbuf;
+	chmod(fpath, 0755);
 	return remove(fpath);
 }
 
@@ -182,16 +184,29 @@ TEST_F(TestExtTest, TestEnvironmentFullTest) {
 		files = std::unordered_set(te.getFiles());
 
 		for (auto s : dirs) {
+			if (std::regex_match(s, std::regex(".*noaccess.*"))) {
+				continue;
+			}
 			EXPECT_TRUE(TestExt::dirExists(s.c_str()));
 		}
 		for (auto s : files) {
+			if (std::regex_match(s, std::regex(".*noaccess.*"))) {
+				continue;
+			}
 			EXPECT_TRUE(TestExt::fileExists(s.c_str()));
 		}
 	}
 	for (auto s : dirs) {
+		if (std::regex_match(s, std::regex(".*noaccess.*"))) {
+			continue;
+		}
+		std::cout << s.c_str() << std::endl;
 		EXPECT_TRUE(!TestExt::dirExists(s.c_str()));
 	}
 	for (auto s : files) {
+		if (std::regex_match(s, std::regex(".*noaccess.*"))) {
+			continue;
+		}
 		EXPECT_TRUE(!TestExt::fileExists(s.c_str()));
 	}
 }

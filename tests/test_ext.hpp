@@ -87,7 +87,7 @@ public:
 	/**
 	 * @brief Constructs a "basic" test environment with the following structure:
 	 * basePath (0755)
-	 *     test[0-count].txt (0644)
+	 *     test_[0-count].txt (0644)
 	 *
 	 * @param basePath The base path to create the test environment within.
 	 * @param count The number of files to create.
@@ -102,13 +102,13 @@ public:
 	 *     test[0-countPerDir].txt (0755)
 	 *     noaccess.txt (0000)
 	 *         dir1 (0755)
-	 *             d1[0-countPerDir].txt (0644)
+	 *             d1_[0-countPerDir].txt (0644)
 	 *         dir2 (0755)
-	 *             d2[0-countPerDir].txt (0644)
+	 *             d2_[0-countPerDir].txt (0644)
 	 *         excl (0755)
-	 *             ex[0-countPerDir].txt (0644)
+	 *             ex_[0-countPerDir].txt (0644)
 	 *         noaccess (0000)
-	 *             noacc.txt (0644)
+	 *             noaccess.txt (0644)
 	 *
 	 * @param basePath The base path to create the test environment within.
 	 * @param countPerDir The number of files to create in each directory.
