@@ -200,7 +200,6 @@ TEST_F(TestExtTest, TestEnvironmentFullTest) {
 		if (std::regex_match(s, std::regex(".*noaccess.*"))) {
 			continue;
 		}
-		std::cout << s.c_str() << std::endl;
 		EXPECT_TRUE(!TestExt::dirExists(s.c_str()));
 	}
 	for (auto s : files) {

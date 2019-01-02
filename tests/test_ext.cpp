@@ -35,7 +35,7 @@ namespace TestExt {
 static long fileSize(const char* filename) {
 	struct stat st;
 	if (stat(filename, &st) != 0) {
-		throw CsError(std::string("Failed to stat \"") + filename + "\" (" + std::strerror(errno) + ")");
+		CSTHROW(std::string("Failed to stat \"") + filename + "\" (" + std::strerror(errno) + ")");
 	}
 	return st.st_size;
 }
@@ -43,11 +43,11 @@ static long fileSize(const char* filename) {
 void createFile(const char* filename, const void* data, size_t dataLen) {
 	std::ofstream ofs(filename);
 	if (!ofs) {
-		throw CsError(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
+		CSTHROW(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
 	}
 	ofs.write(reinterpret_cast<const char*>(data), dataLen);
 	if (!ofs) {
-		throw CsError(std::string("I/O error writing to \"") + filename + "\"");
+		CSTHROW(std::string("I/O error writing to \"") + filename + "\"");
 	}
 }
 
@@ -64,7 +64,7 @@ int compare(const char* filename, const void* data, long dataLen) {
 
 	ifs.open(filename);
 	if (!ifs) {
-		throw CsError(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno));
+		CSTHROW(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno));
 	}
 
 	do {
@@ -96,11 +96,11 @@ int compare(const char* filename, const char* otherFilename) {
 
 	ifs1.open(filename);
 	if (!ifs1) {
-		throw CsError(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
+		CSTHROW(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
 	}
 	ifs2.open(otherFilename);
 	if (!ifs2) {
-		throw CsError(std::string("Failed to open \"") + otherFilename + "\" (" + std::strerror(errno) + ")");
+		CSTHROW(std::string("Failed to open \"") + otherFilename + "\" (" + std::strerror(errno) + ")");
 	}
 
 	do {
@@ -196,7 +196,7 @@ struct TestEnvironment::TestEnvironmentImpl {
 	 */
 	void makeDirectory(const char* path, int nFiles = 20, const char* prefix = "test", const char* suffix = ".txt", int maxFileLen = 4096, unsigned seed = 0) {
 		if (mkdir(path, 0755) != 0) {
-			throw CsError(std::string("Failed to create directory \"") + path + "\" (" + std::strerror(errno) + ")");
+			CSTHROW(std::string("Failed to create directory \"") + path + "\" (" + std::strerror(errno) + ")");
 		}
 		this->dirs.insert(path);
 
@@ -234,13 +234,16 @@ TestEnvironment TestEnvironment::Full(const char* basePath, int nFilesPerDir, in
 	te.impl->makeDirectory(makePath({basePath, "dir1"}).c_str(), nFilesPerDir, "d1_", ".txt", maxFileLen);
 	te.impl->makeDirectory(makePath({basePath, "dir2"}).c_str(), nFilesPerDir, "d2_", ".txt", maxFileLen);
 	te.impl->makeDirectory(makePath({basePath, "excl"}).c_str(), nFilesPerDir, "ex_", ".txt", maxFileLen);
-	if (mkdir(noaccDirPath.c_str(), 0000) != 0) {
-		throw CsError(std::string("Failed to create directory \"") + noaccDirPath + "\" (" + std::strerror(errno) + ")");
+	if (mkdir(noaccDirPath.c_str(), 0755) != 0) {
+		CSTHROW(std::string("Failed to create directory \"") + noaccDirPath + "\" (" + std::strerror(errno) + ")");
 	}
 	te.impl->dirs.insert(noaccDirPath);
 	createFile(noaccFilePath.c_str(), noaccContents, std::strlen(noaccContents));
 	if (chmod(noaccFilePath.c_str(), 0000) != 0) {
-		throw CsError(std::string("Failed to chmod \"") + noaccFilePath.c_str() + "\" (" + std::string(std::strerror(errno)) + ")");
+		CSTHROW(std::string("Failed to chmod \"") + noaccFilePath.c_str() + "\" (" + std::string(std::strerror(errno)) + ")");
+	}
+	if (chmod(noaccDirPath.c_str(), 0000) != 0) {
+		CSTHROW(std::string("Failed to chmod dir \"") + noaccDirPath.c_str() + "\" (" + std::string(std::strerror(errno)) + ")");
 	}
 
 	return te;
@@ -261,6 +264,10 @@ void rmRf(const char* basePath) {
 	while ((dnt = readdir(dp)) != nullptr) {
 		std::string path = makePath({basePath, dnt->d_name});
 		struct stat st;
+
+		if (!strcmp(dnt->d_name, "..") || !strcmp(dnt->d_name, ".")) {
+			continue;
+		}
 
 		stat(path.c_str(), &st);
 

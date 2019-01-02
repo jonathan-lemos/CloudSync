@@ -8,10 +8,14 @@
 
 #include <stdexcept>
 
-class __CsError : public std::runtime_error {
+namespace CloudSync {
+
+class CsError : public std::runtime_error {
 public:
-	__CsError(const std::string& msg, const char* file, int line) :
+	CsError(const std::string& msg, const char* file, int line) :
 		std::runtime_error(std::string(file) + ":" + std::to_string(line) + ": " + msg) {}
 };
 
-#define CsError(msg) __CsError(msg, __FILE__, __LINE__)
+}
+
+#define CSTHROW(msg) throw CloudSync::CsError(msg, __FILE__, __LINE__)

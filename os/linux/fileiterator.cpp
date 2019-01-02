@@ -7,6 +7,7 @@
  */
 
 #include "../../fileiterator.hpp"
+#include "../../cserror.hpp"
 #include <cerrno>
 #include <cstring>
 #include <dirent.h>
@@ -22,17 +23,46 @@ namespace CloudSync{
  */
 struct DirEntry {
 	DirEntry(const char* dir); /**< Constructs a DirEntry class corresponding to the specified directory. */
+	DirEntry(const DirEntry& other) = delete;
+	DirEntry& operator=(const DirEntry& other) = delete;
+	DirEntry(DirEntry&& other);
+	DirEntry& operator=(DirEntry&& other);
 	~DirEntry();               /**< Closes dp and destructs DirEntry class. */
+
 	DIR* dp;                   /**< The DIR* corresponding to the directory. */
 	struct dirent* dnt;        /**< An entry within the directory. */
 	std::string name;          /**< The name of the directory. */
+	std::string current;
 };
 
 DirEntry::DirEntry(const char* dir): dnt(nullptr), name(dir) {
 	this->dp = opendir(dir);
 	if (!(this->dp)){
-		throw std::runtime_error(std::string("Failed to open directory \"") + dir + "\" (" + std::strerror(errno) + ")");
+		CSTHROW(std::string("Failed to open directory \"") + dir + "\" (" + std::strerror(errno) + ")");
 	}
+}
+
+DirEntry::DirEntry(DirEntry&& other) {
+	this->dp = other.dp;
+	other.dp = nullptr;
+	this->dnt = other.dnt;
+	other.dnt = nullptr;
+	this->name = other.name;
+	other.name = "";
+	this->current = other.current;
+	other.current = "";
+}
+
+DirEntry& DirEntry::operator=(DirEntry&& other) {
+	this->dp = other.dp;
+	other.dp = nullptr;
+	this->dnt = other.dnt;
+	other.dnt = nullptr;
+	this->name = other.name;
+	other.name = "";
+	this->current = other.current;
+	other.current = "";
+	return *this;
 }
 
 DirEntry::~DirEntry() {
@@ -50,11 +80,11 @@ struct FileIterator::FileIteratorImpl {
 	/**
 	 * @brief The mutex allows this class to work with multiple threads.
 	 */
-	std::mutex m;
+	std::recursive_mutex m;
 };
 
 FileIterator::FileIterator(const char* baseDir): impl(std::make_unique<FileIteratorImpl>()) {
-	impl->dirStack.push(baseDir);
+	impl->dirStack.push(DirEntry(baseDir));
 }
 
 // Explicit destructor to allow unique_ptr destruction to work properly.
@@ -70,13 +100,12 @@ static std::string make_path(const char* dir, const char* d_name) {
 }
 
 const char* FileIterator::nextEntry() {
-	std::string ret;
 	struct stat st;
 	// lock mutex to prevent multiple threads from accessing the same entry
-	std::unique_lock<std::mutex> lock(impl->m);
+	// std::unique_lock<std::recursive_mutex> lock(impl->m);
 
 	// If we don't have a current directory.
-	if (impl->dirStack.empty()){
+	if (impl->dirStack.empty()) {
 		return nullptr;
 	}
 
@@ -85,7 +114,7 @@ const char* FileIterator::nextEntry() {
 	// Then get the next entry in that directory.
 	entry.dnt = readdir(entry.dp);
 	// If we are out of entries in this directory.
-	if (!entry.dnt){
+	if (!entry.dnt) {
 		// Go back up a level and return that entry.
 		impl->dirStack.pop();
 		return nextEntry();
@@ -99,26 +128,32 @@ const char* FileIterator::nextEntry() {
 	}
 
 	// Get the full path of the file from the directory and d_name.
-	ret = make_path(entry.name.c_str(), entry.dnt->d_name);
-	if (lstat(ret.c_str(), &st) != 0){
-		throw std::runtime_error(strerror(errno));
+	entry.current = make_path(entry.name.c_str(), entry.dnt->d_name);
+	if (lstat(entry.current.c_str(), &st) != 0){
+		CSTHROW(std::string("Failed to stat \"") + entry.current.c_str() + "\" (" + std::strerror(errno) + ")");
 	}
 
 	// If this entry is a directory.
 	if (S_ISDIR(st.st_mode)){
 		// Push it onto the stack and get its first entry.
-		impl->dirStack.push(ret.c_str());
+		impl->dirStack.push(DirEntry(entry.current.c_str()));
 		return nextEntry();
 	}
 	// Otherwise return this entry.
-	return ret.c_str();
+	return entry.current.c_str();
 }
 
 const char* FileIterator::currentDirectory() {
+	if (this->impl->dirStack.empty()) {
+		return nullptr;
+	}
 	return this->impl->dirStack.top().name.c_str();
 }
 
 void FileIterator::skipDirectory() {
+	if (this->impl->dirStack.empty()) {
+		CSTHROW("Cannot skipDirectory() when stack is empty");
+	}
 	this->impl->dirStack.pop();
 }
 

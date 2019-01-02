@@ -7,8 +7,10 @@
  */
 
 #include "../fileiterator.hpp"
+#include "../cserror.hpp"
 #include "test_ext.hpp"
 #include <gtest/gtest.h>
+#include <regex>
 
 TEST(FileIteratorTest, MainTest) {
 	constexpr const char* tmpPath = "tmpPath";
@@ -16,14 +18,34 @@ TEST(FileIteratorTest, MainTest) {
 	std::unordered_set<std::string> files(te.getFiles());
 	CloudSync::FileIterator fi(tmpPath);
 	const char* current = fi.nextEntry();
-	EXPECT_TRUE(current != nullptr);
 
-	do {
-		EXPECT_TRUE(fi.currentDirectory() == tmpPath);
-		EXPECT_TRUE(files.find(current) != files.end());
+	while (current != nullptr) {
+		ASSERT_TRUE(files.find(current) != files.end());
 		files.erase(files.find(current));
-		current = fi.nextEntry();
-	} while (current != nullptr);
+		do {
+			try {
+				current = fi.nextEntry();
+				break;
+			}
+			catch (CloudSync::CsError& e) {
+				std::cerr << e.what() << std::endl;
+				continue;
+			}
+		} while (1);
+	}
+
+	for (auto it = files.begin(); it != files.end(); ) {
+		if (std::regex_match(*it, std::regex(".*noacc.*"))) {
+			files.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+
+	std::for_each(files.begin(), files.end(), [](const auto& elem) {
+		std::cout << elem << std::endl;
+	});
 
 	EXPECT_TRUE(files.size() == 0);
 }
@@ -32,20 +54,26 @@ TEST(SkipDirectoryTest, MainTest) {
 	constexpr const char* tmpPath = "tmpPath";
 	TestExt::TestEnvironment te = TestExt::TestEnvironment::Full(tmpPath);
 	CloudSync::FileIterator fi(tmpPath);
-	std::string initialDir;
 	const char* current = fi.nextEntry();
+	bool foundD2 = false;
 
-	EXPECT_TRUE(current != nullptr);
-	initialDir = fi.currentDirectory();
-	fi.skipDirectory();
-	current = fi.nextEntry();
-	EXPECT_TRUE(current != nullptr);
-
-	do {
-		EXPECT_TRUE(fi.currentDirectory() != initialDir);
-		EXPECT_TRUE(std::string(current).substr(0, initialDir.size()) != initialDir);
-		current = fi.nextEntry();
-	} while (current);
+	while (current != nullptr) {
+		ASSERT_TRUE(fi.currentDirectory());
+		if (std::regex_match(current, std::regex(".*dir2.*"))) {
+			EXPECT_TRUE(!foundD2);
+			fi.skipDirectory();
+			foundD2 = true;
+		}
+		auto currentOld = current;
+		do {
+			try {
+				current = fi.nextEntry();
+			}
+			catch (CloudSync::CsError& e) {
+				std::cerr << e.what() << std::endl;
+			}
+		} while (current == currentOld);
+	}
 }
 
 int main(int argc, char** argv) {
