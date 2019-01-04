@@ -92,6 +92,24 @@ public:
 	std::optional<std::reference_wrapper<const std::vector<unsigned char>>> readEntry(const char* key) const;
 
 	/**
+	 * @brief Removes a key from the file.
+	 *
+	 * @param key The key to remove.
+	 *
+	 * @return True if the key was removed, false if the key did not exist in the file.
+	 */
+	bool removeEntry(const char* key);
+
+	/**
+	 * @brief Gets a vector containing all the entries in the file.
+	 *
+	 * @return A reference to a vector containing all the entries in the file.
+	 * The first member of the pair is the key.
+	 * The second member of the pair is the data.
+	 */
+	const std::vector<std::pair<std::string, std::vector<unsigned char>>>& getAllEntries() const;
+
+	/**
 	 * @brief Flushes the current unwritten changes to the buffer.
 	 *
 	 * @exception std::runtime_error There was an I/O error writing to the file.

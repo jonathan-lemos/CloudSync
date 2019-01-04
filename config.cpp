@@ -52,6 +52,34 @@ struct ConfigFile::ConfigFileImpl {
 	std::vector<std::pair<std::string, std::vector<unsigned char>>> entries = {};
 
 	/**
+	 * @brief Finds an entry within the entry vector.
+	 *
+	 * @param key The key to search for.
+	 *
+	 * @return An iterator to the entry, or entries.end() if the key does not exist within the entries vector.
+	 */
+	auto findEntry(const char* key) {
+		std::string s(key);
+		size_t left = 0;
+		size_t right = entries.size() - 1;
+		while (left <= right) {
+			size_t mid = (left + right) / 2;
+			auto it = entries.begin() + mid;
+
+			if (it->first < s) {
+				left = right + 1;
+			}
+			else if (it->first > s) {
+				right = left - 1;
+			}
+			else {
+				return it;
+			}
+		}
+		return entries.end();
+	}
+
+	/**
 	 * @brief Inserts an entry into the correct spot in the entry vector.
 	 * The correct spot makes sure that this vector is sorted at all times.
 	 * This function also removes an entry with a duplicate key.
@@ -207,23 +235,24 @@ ConfigFile& ConfigFile::writeEntry(const char* key, void* data, uint64_t data_le
 }
 
 std::optional<std::reference_wrapper<const std::vector<unsigned char>>> CS_PURE ConfigFile::readEntry(const char* key) const {
-	// Since the list is sorted, we can use binary search here.
-	size_t left = 0;
-	size_t right = this->impl->entries.size() - 1;
-	while (left <= right) {
-		size_t mid = (left + right) / 2;
-		int res = strcmp(this->impl->entries[mid].first.c_str(), key);
-		if (res < 0) {
-			left = right + 1;
-		}
-		else if (res > 0) {
-			right = left - 1;
-		}
-		else {
-			return this->impl->entries[mid].second;
-		}
+	auto it = this->impl->findEntry(key);
+	if (it != this->impl->entries.end()) {
+		return it->second;
 	}
 	return std::nullopt;
+}
+
+bool ConfigFile::removeEntry(const char* key) {
+	auto it = this->impl->findEntry(key);
+	if (it == this->impl->entries.end()) {
+		return false;
+	}
+	this->impl->entries.erase(it);
+	return true;
+}
+
+const std::vector<std::pair<std::string, std::vector<unsigned char>>>& ConfigFile::getAllEntries() const {
+	return this->impl->entries;
 }
 
 void ConfigFile::flush() {
