@@ -16,35 +16,41 @@
 
 constexpr const char* testFname = "test.txt";
 
+constexpr const char* const header = "CF\n";
+constexpr const char* const key1 = "key1";
+constexpr const char* const key2 = "key2";
+const std::vector<unsigned char> data1 = { 'd', 'a', 't', 'a' };
+const std::vector<unsigned char> data2 = { '\0', '\n', '\b', 255, 0x1, 0x2 };
+const size_t data1len = data1.size();
+const size_t data2len = data2.size();
+
+std::vector<unsigned char> makeSampleData(const std::vector<std::pair<std::string, std::vector<unsigned char>>>& pairs) {
+	std::vector<unsigned char> ret;
+	ret.insert(ret.end(), header, header + std::strlen(header));
+	std::for_each(pairs.begin(), pairs.end(), [&ret](const auto& elem) {
+		size_t len = elem.second.size();
+		ret.insert(ret.end(), elem.first.c_str(), elem.first.c_str() + elem.first.length());
+		ret.insert(ret.end(), &len, &len + 1);
+		ret.insert(ret.end(), elem.second);
+	});
+	return ret;
+}
+
+const std::vector sampleData = makeSampleData({
+	std::make_pair(key1, data1),
+	std::make_pair(key2, data2)
+});
+
 class ConfigFileTest : public testing::Test {
 protected:
-	const char* const header = "CF\n";
-	const char* const key1 = "key1";
-	const char* const key2 = "key2";
-	const unsigned char data1[4] = { 'd', 'a', 't', 'a' };
-	const unsigned char data2[6] = { '\0', '\n', '\b', 255, 0x1, 0x2 };
-	const size_t data1len = sizeof(data1);
-	const size_t data2len = sizeof(data2);
+	ConfigFileTest() {}
 
-	ConfigFileTest() {
-		__sampleData.insert(__sampleData.end(), header, header + std::strlen(header));
-		__sampleData.insert(__sampleData.end(), key1, key1 + std::strlen(key1));
-		__sampleData.insert(__sampleData.end(), &data1len, &data1len + 1);
-		__sampleData.insert(__sampleData.end(), std::begin(data1), std::end(data1));
-		__sampleData.insert(__sampleData.end(), key2, key2 + std::strlen(key2));
-		__sampleData.insert(__sampleData.end(), &data2len, &data2len + 1);
-		__sampleData.insert(__sampleData.end(), std::begin(data2), std::end(data2));
-	}
 	virtual ~ConfigFileTest() {}
 
 	virtual void SetUp() override {}
 
 	virtual void TearDown() override {
 		std::remove(testFname);
-	}
-
-	const std::vector<unsigned char>& sampleData() const {
-		return this->__sampleData;
 	}
 
 private:
@@ -54,36 +60,46 @@ private:
 TEST_F(ConfigFileTest, WriteTest) {
 	{
 		CloudSync::ConfigFile file(testFname);
-		file.writeEntry(key2, (void*)data2, sizeof(data2));
-		file.writeEntry(key1, (void*)data1, sizeof(data1));
+		file.writeEntry(key2, data2.data(), data2.size());
+		file.writeEntry(key1, data1);
 	}
-	EXPECT_TRUE(TestExt::compare(testFname, &(sampleData()[0]), sampleData().size()) == 0);
+	EXPECT_TRUE(TestExt::compare(testFname, &(sampleData[0]), sampleData.size()) == 0);
 }
 
 TEST_F(ConfigFileTest, ReadTest) {
 	std::ofstream ofs(testFname);
-	ofs.write(reinterpret_cast<const char*>(&(sampleData()[0])), sampleData().size());
+	ofs.write(reinterpret_cast<const char*>(&(sampleData[0])), sampleData.size());
 	ofs.close();
 
 	CloudSync::ConfigFile cf(testFname);
 	auto res = cf.readEntry(key1);
 	EXPECT_TRUE(res);
-	EXPECT_TRUE(std::memcmp(&res.value().get()[0], data1, sizeof(data1)) == 0);
+	EXPECT_TRUE(res.value().get() == data1);
 	res = cf.readEntry(key2);
 	EXPECT_TRUE(res);
-	EXPECT_TRUE(std::memcmp(&res.value().get()[0], data2, sizeof(data2)) == 0);
+	EXPECT_TRUE(res.value().get() == data2);
 	res = cf.readEntry("noex");
 	EXPECT_TRUE(!res);
 }
 
 TEST_F(ConfigFileTest, MultiTest) {
+	std::vector<std::string> keys;
+	std::vector<unsigned char> data;
+
 	std::ofstream ofs(testFname);
-	ofs.write(reinterpret_cast<const char*>(&(sampleData()[0])), sampleData().size());
+	ofs.write(reinterpret_cast<const char*>(&(sampleData[0])), sampleData.size());
 	ofs.close();
 
 	CloudSync::ConfigFile cf(testFname);
 	EXPECT_TRUE(!cf.removeEntry("noex"));
 	EXPECT_TRUE(cf.removeEntry("key1"));
 
-	EXPECT_TRUE(cf.getAllEntries().size() == 1);
+	keys = cf.getKeys();
+	EXPECT_TRUE(keys.size() == 1);
+	EXPECT_TRUE(keys[0] == "key2");
+	EXPECT_TRUE(cf.readEntry(keys[0].c_str()).value().get() == data2);
+	cf.flush();
+
+	data = makeSampleData({ std::make_pair(key2, data2) });
+	EXPECT_TRUE(TestExt::compare(testFname, data) == 0);
 }

@@ -7,6 +7,7 @@
  */
 
 #include <memory>
+#include <vector>
 #include <unordered_set>
 
 namespace TestExt {
@@ -36,6 +37,20 @@ void createFile(const char* filename, const void* data, size_t dataLen);
  * Positive otherwise.
  */
 int compare(const char* filename, const void* data, long dataLen);
+
+/**
+ * @brief Compares a file's contents with the given byte vector.
+ *
+ * @param filename The file's path.
+ * @param vec The byte vector to compare it to.
+ *
+ * @exception std::runtime_error Failed to open/read the file.
+ *
+ * @return 0 if the contents are the same.
+ * Negative if the first char that doesn't match is less in the file than the data, or if the file is shorter than the data.
+ * Positive otherwise.
+ */
+int compare(const char* filename, const std::vector<unsigned char>& vec);
 
 /**
  * @brief Compares a file's contents with another file's contents.

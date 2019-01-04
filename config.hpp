@@ -76,10 +76,27 @@ public:
 	 *
 	 * @return this
 	 *
-	 * @exception std::logic_error The ConfigFile is opened for reading instead of writing.
 	 * @exception std::runtime_error I/O error when writing to the file.
 	 */
-	ConfigFile& writeEntry(const char* key, void* data, uint64_t data_len);
+	ConfigFile& writeEntry(const char* key, const void* data, uint64_t data_len);
+
+	/**
+	 * @brief Writes an entry to the file.
+	 * These can be retrieved with ConfigFile::readEntry() later.
+	 * @see CloudSync::ConfigFile::readEntry()
+	 *
+	 * @param key The key that will be used to refer to the data.
+	 * If a key with this entry already exists, it will be overwritten.
+	 * At the moment, the key can contain any character.
+	 * For future compatibillity, restrict the key to [A-Za-z0-9].
+	 *
+	 * @param data The data to write.
+	 *
+	 * @return this
+	 *
+	 * @exception std::runtime_error I/O error when writing to the file.
+	 */
+	ConfigFile& writeEntry(const char* key, const std::vector<unsigned char>& data);
 
 	/**
 	 * @brief Retrieves the data corresponding to the given key from the file.
@@ -101,13 +118,11 @@ public:
 	bool removeEntry(const char* key);
 
 	/**
-	 * @brief Gets a vector containing all the entries in the file.
+	 * @brief Gets a vector containing all the keys in the file.
 	 *
-	 * @return A reference to a vector containing all the entries in the file.
-	 * The first member of the pair is the key.
-	 * The second member of the pair is the data.
+	 * @return A vector containing all the keys in the file as strings.
 	 */
-	const std::vector<std::pair<std::string, std::vector<unsigned char>>>& getAllEntries() const;
+	std::vector<std::string> getKeys() const;
 
 	/**
 	 * @brief Flushes the current unwritten changes to the buffer.

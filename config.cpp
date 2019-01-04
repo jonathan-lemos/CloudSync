@@ -225,13 +225,17 @@ ConfigFile& ConfigFile::operator=(ConfigFile&& other) {
 	return *this;
 }
 
-ConfigFile& ConfigFile::writeEntry(const char* key, void* data, uint64_t data_len) {
+ConfigFile& ConfigFile::writeEntry(const char* key, const void* data, uint64_t data_len) {
 	// Create a vector out of the data
-	unsigned char* ptr = static_cast<unsigned char*>(data);
+	const unsigned char* ptr = static_cast<const unsigned char*>(data);
 	std::vector<unsigned char> vec(ptr, ptr + data_len);
 	// Insert it into the list
 	this->impl->insertEntry(std::make_pair(key, vec));
 	return *this;
+}
+
+ConfigFile& ConfigFile::writeEntry(const char* key, const std::vector<unsigned char>& data) {
+	return this->writeEntry(key, data.data(), data.size());
 }
 
 std::optional<std::reference_wrapper<const std::vector<unsigned char>>> CS_PURE ConfigFile::readEntry(const char* key) const {
@@ -251,8 +255,12 @@ bool ConfigFile::removeEntry(const char* key) {
 	return true;
 }
 
-const std::vector<std::pair<std::string, std::vector<unsigned char>>>& ConfigFile::getAllEntries() const {
-	return this->impl->entries;
+std::vector<std::string> ConfigFile::getKeys() const {
+	std::vector<std::string> ret;
+	std::transform(this->impl->entries.begin(), this->impl->entries.end(), std::back_inserter(ret), [](const auto& elem) {
+		return elem.first;
+	});
+	return ret;
 }
 
 void ConfigFile::flush() {

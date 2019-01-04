@@ -80,6 +80,10 @@ int compare(const char* filename, const void* data, long dataLen) {
 	return 0;
 }
 
+int compare(const char* filename, const std::vector<unsigned char>& vec) {
+	return compare(filename, vec.data(), vec.size());
+}
+
 int compare(const char* filename, const char* otherFilename) {
 	long size1 = fileSize(filename);
 	long size2 = fileSize(otherFilename);
