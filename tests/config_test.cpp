@@ -31,7 +31,7 @@ std::vector<unsigned char> makeSampleData(const std::vector<std::pair<std::strin
 		size_t len = elem.second.size();
 		ret.insert(ret.end(), elem.first.c_str(), elem.first.c_str() + elem.first.length());
 		ret.insert(ret.end(), &len, &len + 1);
-		ret.insert(ret.end(), elem.second);
+		ret.insert(ret.end(), elem.second.begin(), elem.second.end());
 	});
 	return ret;
 }
@@ -90,16 +90,43 @@ TEST_F(ConfigFileTest, MultiTest) {
 	ofs.write(reinterpret_cast<const char*>(&(sampleData[0])), sampleData.size());
 	ofs.close();
 
-	CloudSync::ConfigFile cf(testFname);
-	EXPECT_TRUE(!cf.removeEntry("noex"));
-	EXPECT_TRUE(cf.removeEntry("key1"));
+	{
+		CloudSync::ConfigFile cf(testFname);
+		EXPECT_TRUE(!cf.removeEntry("noex"));
+		EXPECT_TRUE(cf.removeEntry("key1"));
 
-	keys = cf.getKeys();
-	EXPECT_TRUE(keys.size() == 1);
-	EXPECT_TRUE(keys[0] == "key2");
-	EXPECT_TRUE(cf.readEntry(keys[0].c_str()).value().get() == data2);
-	cf.flush();
+		keys = cf.getKeys();
+		EXPECT_TRUE(keys.size() == 1);
+		EXPECT_TRUE(keys[0] == "key2");
+		EXPECT_TRUE(cf.readEntry(keys[0].c_str()).value().get() == data2);
+		cf.flush();
 
-	data = makeSampleData({ std::make_pair(key2, data2) });
+		data = makeSampleData({ std::make_pair(key2, data2) });
+		EXPECT_TRUE(TestExt::compare(testFname, data) == 0);
+
+		cf.writeEntry(key1, data2);
+	}
+	data = makeSampleData({ std::make_pair(key1, data2), std::make_pair(key2, data2) });
 	EXPECT_TRUE(TestExt::compare(testFname, data) == 0);
 }
+
+TEST_F(ConfigFileTest, EmptyTest) {
+	constexpr const unsigned char data[] = { 'C', 'F', '\n' };
+	{
+		CloudSync::ConfigFile cf(testFname);
+	}
+	EXPECT_TRUE(TestExt::compare(testFname, data, sizeof(data)) == 0);
+	{
+		CloudSync::ConfigFile cf(testFname);
+		EXPECT_TRUE(cf.getKeys().size() == 0);
+	}
+}
+
+#ifndef __MAIN_TEST__
+
+int main(int argc, char** argv) {
+	testing::InitGoogleTest(&argc, argv);
+	return RUN_ALL_TESTS();
+}
+
+#endif

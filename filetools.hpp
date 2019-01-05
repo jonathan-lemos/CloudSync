@@ -40,6 +40,16 @@ bool fileExists(const char* path);
 bool directoryExists(const char* path);
 
 /**
+ * @brief Renames a file.
+ *
+ * @param fnOld The old filename
+ * @param fnNew The new filename
+ *
+ * std::runtime_error fnOld does not exist or failed to rename file.
+ */
+void rename(const char* fnOld, const char* fnNew);
+
+/**
  * @brief Returns the size of a file.
  *
  * @param path Path to a file.

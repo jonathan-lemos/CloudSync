@@ -210,7 +210,11 @@ TEST_F(TestExtTest, TestEnvironmentFullTest) {
 	}
 }
 
+#ifndef __MAIN_TEST__
+
 int main(int argc, char** argv) {
 	testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
 }
+
+#endif

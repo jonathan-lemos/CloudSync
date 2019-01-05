@@ -45,7 +45,7 @@ public:
 	/**
 	 * @brief Returns the current directory name, or nullptr if there isn't one.
 	 */
-	const char* currentDirectory();
+	const char* currentDirectory() const;
 
 	/**
 	 * @brief Skips the current directory.

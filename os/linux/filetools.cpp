@@ -7,6 +7,7 @@
  */
 
 #include "../../filetools.hpp"
+#include "../../cserror.hpp"
 #include <cstring>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -29,6 +30,23 @@ bool directoryExists(const char* path) {
 		return false;
 	}
 	return S_ISDIR(st.st_mode);
+}
+
+void rename(const char* fnOld, const char* fnNew) {
+	if (std::rename(fnOld, fnNew) == 0) {
+		return;
+	}
+
+	std::ifstream ifs(fnOld, std::ios::binary);
+	if (!ifs) {
+		CSTHROW(std::string("Failed to open \"") + fnOld + "\" for renaming (" + std::strerror(errno) + ")");
+	}
+	std::ofstream ofs(fnNew, std::ios::binary);
+	if (!ofs) {
+		CSTHROW(std::string("Failed to open \"") + fnNew + "\" as a rename target (" + std::strerror(errno) + ")");
+	}
+
+	ofs << ifs.rdbuf();
 }
 
 std::optional<uint64_t> fileSize(const char* path) {

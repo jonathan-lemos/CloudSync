@@ -7,7 +7,9 @@
  */
 
 #include "config.hpp"
+#include "cserror.hpp"
 #include "filetools.hpp"
+#include "logger.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
@@ -36,7 +38,7 @@ struct ConfigFile::ConfigFileImpl {
 	/**
 	 * @brief The path of the ConfigFile being edited.
 	 */
-	const char* path = nullptr;
+	std::string path;
 	/**
 	 * @brief True if there are pending changes, false if not.
 	 */
@@ -88,21 +90,19 @@ struct ConfigFile::ConfigFileImpl {
 	 */
 	void insertEntry(const std::pair<std::string, std::vector<unsigned char>>& entry) {
 		// Iterate in reverse because more often than not this will insert at the back.
-		auto pos = this->entries.end() - 1;
-		for (; pos >= this->entries.begin(); --pos) {
+		auto pos = this->entries.rbegin();
+		for (; pos != this->entries.rend(); ++pos) {
 			// If an entry already exists with this key.
 			if (entry.first == pos->first) {
 				// Remove it, then decrement the iterator
-				this->entries.erase(pos--);
+				this->entries.erase((++pos).base());
 				break;
 			}
 			else if (entry.first < pos->first) {
 				break;
 			}
 		}
-		// Increment the iterator so we are at the correct spot to insert
-		pos++;
-		this->entries.insert(pos, entry);
+		this->entries.insert(pos.base(), entry);
 		this->pending = true;
 	}
 
@@ -113,7 +113,7 @@ struct ConfigFile::ConfigFileImpl {
 	 * If a file already exists at this path, it will be overwritten on success.
 	 * On failure this file is untouched.
 	 *
-	 * @exception std::runtime_error There was an I/O error writing to the file.
+	 * @exception CsError There was an I/O error writing to the file.
 	 */
 	void writeFile() {
 		// If there are no pending entries, don't waste time.
@@ -142,19 +142,19 @@ struct ConfigFile::ConfigFileImpl {
 		// If there were any I/O errors.
 		fs.close();
 		if (!fs.good()) {
-			throw std::runtime_error(std::string("I/O error writing to file \"") + this->path + " (" + std::strerror(errno) + ")");
+			CSTHROW(std::string("I/O error writing to file \"") + this->path + " (" + std::strerror(errno) + ")");
 		}
 
 		// Finally, replace the old file with the new one.
 		tmpFileSave.fs().close();
 		std::remove(tmpFileSave.name());
-		if (std::rename(this->path, tmpFileSave.name()) != 0) {
-			throw std::runtime_error(std::string("Failed to move old file to temporary directory (") + std::strerror(errno) + ")");
+		if (std::rename(this->path.c_str(), tmpFileSave.name()) != 0) {
+			CSTHROW(std::string("Failed to move old file to temporary directory (") + std::strerror(errno) + ")");
 		}
 
-		if (std::rename(tmpFileBuf.name(), this->path) != 0) {
-			std::rename(tmpFileSave.name(), this->path);
-			throw std::runtime_error(std::string("Failed to rename temporary file to final output (") + std::strerror(errno) + ")");
+		if (std::rename(tmpFileBuf.name(), this->path.c_str()) != 0) {
+			std::rename(tmpFileSave.name(), this->path.c_str());
+			CSTHROW(std::string("Failed to rename temporary file to final output (") + std::strerror(errno) + ")");
 		}
 
 		this->pending = false;
@@ -164,6 +164,8 @@ struct ConfigFile::ConfigFileImpl {
 ConfigFile::ConfigFile(const char* path): impl(std::make_unique<ConfigFileImpl>()) {
 	std::ifstream ifs(path);
 	char headerBuf[sizeof(CF_HEADER)];
+
+	this->impl->path = path;
 
 	// If the file does not exist,
 	if (!ifs.good()) {
@@ -177,7 +179,7 @@ ConfigFile::ConfigFile(const char* path): impl(std::make_unique<ConfigFileImpl>(
 	ifs.read(headerBuf, sizeof(headerBuf) - 1);
 	// If the first n bytes of the file do not match the header.
 	if (strcmp(headerBuf, CF_HEADER) != 0) {
-		throw std::runtime_error(std::string("The file pointed to by \"") + path + "\" is not of the correct ConfigFile format");
+		CSTHROW(std::string("The file pointed to by \"") + path + "\" is not of the correct ConfigFile format");
 	}
 
 	// While there is data in the file to be read.
@@ -195,20 +197,20 @@ ConfigFile::ConfigFile(const char* path): impl(std::make_unique<ConfigFileImpl>(
 		} while (strlen(keyBuf) == sizeof(keyBuf) - 1);
 
 		if (ifs.eof()) {
-			throw std::runtime_error(std::string("The file pointed to by \"") + path + "\" has a corrupted key.");
+			CSTHROW(std::string("The file pointed to by \"") + path + "\" has a corrupted key.");
 		}
 
 		// Now read the 8-byte length into len.
 		ifs.read(reinterpret_cast<char*>(&len), sizeof(len));
 		if (ifs.eof()) {
-			throw std::runtime_error(std::string("The file pointed to by \"") + path + "\" has a corrupted length for key \"" + key + "\"");
+			CSTHROW(std::string("The file pointed to by \"") + path + "\" has a corrupted length for key \"" + key + "\"");
 		}
 
 		// Now that we know the length, read the data into the vector.
 		data.resize(len);
 		ifs.read(reinterpret_cast<char*>(&(data[0])), len);
 		if (!ifs.good()) {
-			throw std::runtime_error(std::string("I/O error while reading file \"") + path + "\"");
+			CSTHROW(std::string("I/O error while reading file \"") + path + "\"");
 		}
 
 		// Finally, add this entry to our vector.
@@ -268,7 +270,12 @@ void ConfigFile::flush() {
 }
 
 ConfigFile::~ConfigFile() {
-	this->flush();
+	try {
+		this->flush();
+	}
+	catch (CsError& e) {
+		LOG(LEVEL_WARNING) << e.what();
+	}
 }
 
 }
