@@ -14,6 +14,7 @@
 namespace CloudSync::fs {
 
 class IOException : public std::runtime_error {
+public:
 	IOException(std::string msg) : std::runtime_error(msg) {}
 };
 

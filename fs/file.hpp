@@ -20,6 +20,7 @@ enum class Type {
 	Directory,
 	File,
 	Symlink,
+	Other,
 	NotFound,
 };
 
@@ -86,7 +87,8 @@ bool exists(const char* path);
  *
  * @return The size of the file in bytes.
  *
- * @exception CsError The path does not point to a file, or there was an I/O error.
+ * @exception NotFoundException A file was not found at this path.
+ * @exception IOException The path does not point to a file, or there was an I/O error.
  */
 uint64_t size(const char* path);
 
@@ -97,7 +99,8 @@ uint64_t size(const char* path);
  * @param src The old path.
  * @param dst The new path.
  *
- * @exception CsError I/O error.
+ * @exception ExistsException The destination already exists.
+ * @exception IOException I/O error.
  */
 void move(const char* src, const char* dst);
 
@@ -108,7 +111,8 @@ void move(const char* src, const char* dst);
  * @param src The old path.
  * @param dst The new path.
  *
- * @exception CsError I/O error.
+ * @exception ExistsException The destination already exists.
+ * @exception IOException I/O error.
  */
 void copy(const char* src, const char* dst);
 
@@ -117,8 +121,10 @@ void copy(const char* src, const char* dst);
  *
  * @param path The path the symlink should be placed at.
  * @param target The path the symlink should point to.
+ * This path does not necessarily have to exist.
  *
- * @exception CsError I/O error.
+ * @exception ExistsException The given path already exists.
+ * @exception IOException I/O error.
  */
 void createSymlink(const char* path, const char* target);
 
@@ -128,7 +134,10 @@ void createSymlink(const char* path, const char* target);
  *
  * @param path The directory to create.
  *
- * @exception CsError I/O error.
+ * @return True if the directory was created, false if a directory already exists at that path.
+ *
+ * @exception ExistsException A non-directory exists at the given path.
+ * @exception IOException I/O error.
  */
 bool createDirectory(const char* path);
 

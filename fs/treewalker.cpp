@@ -1,4 +1,4 @@
-/** @file fileiterator.cpp
+/** @file treewalker.cpp
  * @brief Recursively iterates through files in a directory.
  * @copyright Copyright (c) 2018 Jonathan Lemos
  *
@@ -10,6 +10,7 @@
 #include "file.hpp"
 #include "ioexception.hpp"
 #include "notfoundexception.hpp"
+#include "../lnthrow.hpp"
 #include <filesystem>
 #include <mutex>
 
@@ -24,11 +25,16 @@ struct TreeWalker::TreeWalkerImpl {
 
 TreeWalker::TreeWalker(const char* baseDir): impl(std::make_unique<TreeWalkerImpl>()) {
 	if (!isDirectory(baseDir)) {
-
+		lnthrow(NotFoundException, "\"" + std::string(baseDir) + "\" does not point to a directory");
 	}
 
 	this->impl->baseDir = baseDir;
-	this->impl->iter = std::filesystem::recursive_directory_iterator(this->impl->baseDir);
+	try {
+		this->impl->iter = std::filesystem::recursive_directory_iterator(this->impl->baseDir);
+	}
+	catch (std::filesystem::filesystem_error& e) {
+		lnthrow(IOException, "Failed to create recursive_directory_iterator.", e);
+	}
 }
 
 TreeWalker::~TreeWalker() = default;
@@ -44,11 +50,11 @@ const char* TreeWalker::nextEntry() {
 	return s;
 }
 
-const char* TreeWalker::currentDirectory() const {
+const char* TreeWalker::currentDirectory() const noexcept {
 	return this->impl->iter->path().c_str();
 }
 
-void TreeWalker::skipDirectory() {
+void TreeWalker::skipDirectory() noexcept {
 	std::unique_lock<std::mutex>(this->impl->m);
 	this->impl->iter.pop();
 }
