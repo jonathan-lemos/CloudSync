@@ -7,7 +7,7 @@
  */
 
 #include "symmetric.hpp"
-#include "../filetools.hpp"
+#include "../fs/file.hpp"
 #include "password.hpp"
 #include <cryptopp/aes.h>
 #include <cryptopp/blowfish.h>
@@ -294,6 +294,7 @@ void Symmetric::encryptFile(const char* filenameIn, const char* filenameOut) {
 
 void Symmetric::encryptFile(const char* filenameInOut) {
 	std::ifstream ifs;
+	std::pair<std::string, std::fstream> tmpFile = fs::makeTemp();
 	File::TmpFile tmpFileBuf;
 	File::TmpFile tmpFileSave;
 

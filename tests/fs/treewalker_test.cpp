@@ -6,17 +6,17 @@
  * of the MIT license.  See the LICENSE file for details.
  */
 
-#include "../fileiterator.hpp"
-#include "../cserror.hpp"
-#include "test_ext.hpp"
+#include "../../fs/treewalker.hpp"
+#include "../../fs/ioexception.hpp"
+#include "../test_ext.hpp"
 #include <gtest/gtest.h>
 #include <regex>
 
-TEST(FileIteratorTest, MainTest) {
+TEST(TreeWalkerTest, MainTest) {
 	constexpr const char* tmpPath = "tmpPath";
 	TestExt::TestEnvironment te = TestExt::TestEnvironment::Full(tmpPath);
 	std::unordered_set<std::string> files(te.getFiles());
-	CloudSync::FileIterator fi(tmpPath);
+	CloudSync::fs::TreeWalker fi(tmpPath);
 	const char* current = fi.nextEntry();
 
 	while (current != nullptr) {
@@ -27,7 +27,7 @@ TEST(FileIteratorTest, MainTest) {
 				current = fi.nextEntry();
 				break;
 			}
-			catch (CloudSync::CsError& e) {
+			catch (CloudSync::fs::IOException& e) {
 				std::cerr << e.what() << std::endl;
 				continue;
 			}
@@ -53,7 +53,7 @@ TEST(FileIteratorTest, MainTest) {
 TEST(SkipDirectoryTest, MainTest) {
 	constexpr const char* tmpPath = "tmpPath";
 	TestExt::TestEnvironment te = TestExt::TestEnvironment::Full(tmpPath);
-	CloudSync::FileIterator fi(tmpPath);
+	CloudSync::fs::TreeWalker fi(tmpPath);
 	const char* current = fi.nextEntry();
 	bool foundD2 = false;
 
@@ -69,7 +69,7 @@ TEST(SkipDirectoryTest, MainTest) {
 			try {
 				current = fi.nextEntry();
 			}
-			catch (CloudSync::CsError& e) {
+			catch (CloudSync::fs::IOException& e) {
 				std::cerr << e.what() << std::endl;
 			}
 		} while (current == currentOld);

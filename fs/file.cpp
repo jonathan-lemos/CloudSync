@@ -11,8 +11,10 @@
 #include "ioexception.hpp"
 #include "notfoundexception.hpp"
 #include "../lnthrow.hpp"
+#include <algorithm>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 
 namespace CloudSync::fs {
 
@@ -109,6 +111,9 @@ void copy(const char* src, const char* dst) {
 	if (std::strcmp(src, dst) == 0) {
 		return;
 	}
+	if (!exists(src)) {
+		lnthrow(NotFoundException, std::string("Copy source \"") + src + "\" does not exist");
+	}
 	if (exists(dst)) {
 		lnthrow(ExistsException, std::string("Copy destination \"") + dst + "\" already exists");
 	}
@@ -129,6 +134,19 @@ void copy(const char* src, const char* dst) {
 			lnthrow(IOException, std::string("Failed to copy file \"") + src + "\" to destination \"" + dst + "\"", e);
 		}
 	}
+}
+
+bool remove(const char* path) {
+	if (!exists(path)) {
+		return false;
+	}
+	try {
+		std::filesystem::remove_all(path);
+	}
+	catch (std::filesystem::filesystem_error& e) {
+		lnthrow(IOException, std::string("Failed to remove path \"") + path + "\"");
+	}
+	return true;
 }
 
 void createSymlink(const char* path, const char* target) {
@@ -161,6 +179,29 @@ bool createDirectory(const char* path) {
 		lnthrow(IOException, std::string("Failed to create directory \"") + path + "\"", e);
 	}
 	return true;
+}
+
+std::pair<std::string, std::fstream> makeTemp() {
+	const std::filesystem::path base = std::filesystem::temp_directory_path();
+	std::filesystem::path file;
+	std::fstream fs;
+
+	do {
+		const char alphabet[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
+		char tmpname[11];
+
+		for (char& c : tmpname) {
+			c = alphabet[std::rand() % sizeof(alphabet) - 1];
+		}
+		tmpname[sizeof(tmpname) - 1] = '\0';
+
+		file = base;
+		file /= "tmp_";
+		file += tmpname;
+	} while (exists(file.c_str()));
+
+	fs.open(file.c_str());
+	return std::make_pair(std::string(file.c_str()), std::move(fs));
 }
 
 }

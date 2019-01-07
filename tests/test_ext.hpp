@@ -19,7 +19,7 @@ namespace TestExt {
  * @param data The data to fill it with.
  * @param dataLen The length of the data to fill.
  *
- * @exception std::runtime_error Failed to create the file.
+ * @exception CloudSync::fs::IOException Failed to create the file.
  */
 void createFile(const char* filename, const void* data, size_t dataLen);
 
@@ -30,7 +30,7 @@ void createFile(const char* filename, const void* data, size_t dataLen);
  * @param data A pointer to the data to compare it with.
  * @param dataLen The length of the data to compare.
  *
- * @exception std::runtime_error Failed to open/read the file.
+ * @exception CloudSync::fs::IOException Failed to open/read the file.
  *
  * @return 0 if the contents are the same.
  * Negative if the first char that doesn't match is less in the file than the data, or if the file is shorter than the data.
@@ -44,7 +44,7 @@ int compare(const char* filename, const void* data, long dataLen);
  * @param filename The file's path.
  * @param vec The byte vector to compare it to.
  *
- * @exception std::runtime_error Failed to open/read the file.
+ * @exception CloudSync::fs::IOException Failed to open/read the file.
  *
  * @return 0 if the contents are the same.
  * Negative if the first char that doesn't match is less in the file than the data, or if the file is shorter than the data.
@@ -58,7 +58,7 @@ int compare(const char* filename, const std::vector<unsigned char>& vec);
  * @param filename The first file.
  * @param otherFilename The second file.
  *
- * @exception std::runtime_error Failed to open/read from one of the files.
+ * @exception CloudSync::fs::IOException Failed to open/read from one of the files.
  *
  * @return 0 if the contents are the same.
  * Negative if the first char that doesn't match is less in the file than the data, or if the file is shorter than the data.
@@ -107,7 +107,7 @@ public:
 	 * @param basePath The base path to create the test environment within.
 	 * @param count The number of files to create.
 	 *
-	 * @exception std::runtime_error Failed to create one or more files/directories.
+	 * @exception CloudSync::fs::IOException Failed to create one or more files/directories.
 	 */
 	static TestEnvironment Basic(const char* basePath, int nFiles = 20, int maxFileLen = 4096);
 
@@ -128,7 +128,7 @@ public:
 	 * @param basePath The base path to create the test environment within.
 	 * @param countPerDir The number of files to create in each directory.
 	 *
-	 * @exception std::runtime_error Failed to create one or more files/directories.
+	 * @exception CloudSync::fs::IOException Failed to create one or more files/directories.
 	 */
 	static TestEnvironment Full(const char* basePath, int nFilesPerDir = 20, int maxFileLen = 4096);
 

@@ -25,19 +25,19 @@ namespace CloudSync{
 class ConfigFile {
 public:
 	/**
-	 * @brief Creates a new ConfigFile at the given path.
+	 * @brief Opens a ConfigFile at the given path.
 	 * If a file does not exist at this path, it will be created.
 	 *
 	 * @param filename The path of the config file to open.
 	 *
-	 * @exception std::runtime_error The given file already exists and is not of the correct format.
+	 * @exception ExistsException The given file already exists and is not of the correct format.
 	 */
 	ConfigFile(const char* path);
 
 	/**
 	 * @brief Move constructor for a ConfigFile.
 	 */
-	ConfigFile(ConfigFile&& other);
+	ConfigFile(ConfigFile&& other) noexcept;
 
 	/**
 	 * @brief Deleted copy constructor for a ConfigFile.
@@ -48,7 +48,7 @@ public:
 	/**
 	 * @brief Move assignment operator for a ConfigFile.
 	 */
-	ConfigFile& operator=(ConfigFile&& other);
+	ConfigFile& operator=(ConfigFile&& other) noexcept;
 
 	/**
 	 * @brief Deleted copy assignment operator for a ConfigFile.
@@ -59,7 +59,7 @@ public:
 	/**
 	 * @brief Closes the internal fstream and flushes any pending changes.
 	 */
-	~ConfigFile();
+	~ConfigFile() noexcept;
 
 	/**
 	 * @brief Writes an entry to the file.
@@ -76,9 +76,9 @@ public:
 	 *
 	 * @return this
 	 *
-	 * @exception std::runtime_error I/O error when writing to the file.
+	 * @exception IOException I/O error when writing to the file.
 	 */
-	ConfigFile& writeEntry(const char* key, const void* data, uint64_t data_len);
+	ConfigFile& writeEntry(const char* key, const void* data, uint64_t data_len) noexcept;
 
 	/**
 	 * @brief Writes an entry to the file.
@@ -94,9 +94,9 @@ public:
 	 *
 	 * @return this
 	 *
-	 * @exception std::runtime_error I/O error when writing to the file.
+	 * @exception IOException I/O error when writing to the file.
 	 */
-	ConfigFile& writeEntry(const char* key, const std::vector<unsigned char>& data);
+	ConfigFile& writeEntry(const char* key, const std::vector<unsigned char>& data) noexcept;
 
 	/**
 	 * @brief Retrieves the data corresponding to the given key from the file.
@@ -106,7 +106,7 @@ public:
 	 *
 	 * @return A reference to a byte vector, or std::nullopt if the key could not be found.
 	 */
-	std::optional<std::reference_wrapper<const std::vector<unsigned char>>> readEntry(const char* key) const;
+	std::optional<std::reference_wrapper<const std::vector<unsigned char>>> readEntry(const char* key) const noexcept;
 
 	/**
 	 * @brief Removes a key from the file.
@@ -115,19 +115,19 @@ public:
 	 *
 	 * @return True if the key was removed, false if the key did not exist in the file.
 	 */
-	bool removeEntry(const char* key);
+	bool removeEntry(const char* key) noexcept;
 
 	/**
 	 * @brief Gets a vector containing all the keys in the file.
 	 *
 	 * @return A vector containing all the keys in the file as strings.
 	 */
-	std::vector<std::string> getKeys() const;
+	std::vector<std::string> getKeys() const noexcept;
 
 	/**
 	 * @brief Flushes the current unwritten changes to the buffer.
 	 *
-	 * @exception std::runtime_error There was an I/O error writing to the file.
+	 * @exception IOException There was an I/O error writing to the file.
 	 */
 	void flush();
 

@@ -10,6 +10,9 @@
 #define __FILE_HPP
 
 #include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace CloudSync::fs {
 
@@ -113,8 +116,20 @@ void move(const char* src, const char* dst);
  *
  * @exception ExistsException The destination already exists.
  * @exception IOException I/O error.
+ * @exception NotFoundException The source does not exist.
  */
 void copy(const char* src, const char* dst);
+
+/**
+ * @brief Removes a file/directory/symlink.
+ * If a directory is specified, this function recursively removes files in that directory.
+ * If the path does not exist, false is returned. Otherwise, true is returned.
+ *
+ * @param path The path.
+ *
+ * @exception IOException I/O error.
+ */
+bool remove(const char* path);
 
 /**
  * @brief Creates a symlink.
@@ -140,6 +155,15 @@ void createSymlink(const char* path, const char* target);
  * @exception IOException I/O error.
  */
 bool createDirectory(const char* path);
+
+/**
+ * @brief Creates a temporary file.
+ *
+ * @return A pair. The first element (std::string) is the filename. The second element (std::fstream) is an fstream corresponding to the file.
+ *
+ * @exception IOException I/O error.
+ */
+std::pair<std::string, std::fstream> makeTemp();
 
 }
 

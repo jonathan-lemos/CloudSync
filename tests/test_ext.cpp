@@ -7,18 +7,23 @@
  */
 
 #include "test_ext.hpp"
-#include "../cserror.hpp"
+#include "../fs/ioexception.hpp"
+#include "../lnthrow.hpp"
 #include <algorithm>
 #include <cstring>
 #include <cerrno>
 #include <cstdlib>
 #include <dirent.h>
+#include <filesystem>
 #include <fstream>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <vector>
+#include <unistd.h>
 
 #define BUFFER_LEN (65536)
+
+namespace fs = std::filesystem;
+namespace ex = CloudSync::fs;
 
 namespace TestExt {
 
@@ -30,24 +35,25 @@ namespace TestExt {
  * @return The size of the file at filename.
  * Note that this function does not detect folders, and will return 4096 bytes for those.
  *
- * @exception CsError Failed to stat the file.
+ * @exception IOException Failed to stat the file.
  */
 static long fileSize(const char* filename) {
-	struct stat st;
-	if (stat(filename, &st) != 0) {
-		CSTHROW(std::string("Failed to stat \"") + filename + "\" (" + std::strerror(errno) + ")");
+	try {
+		return fs::file_size(filename);
 	}
-	return st.st_size;
+	catch (fs::filesystem_error& e) {
+		lnthrow(ex::IOException, std::string("Error statting \"") + filename + "\"", e);
+	}
 }
 
 void createFile(const char* filename, const void* data, size_t dataLen) {
 	std::ofstream ofs(filename);
 	if (!ofs) {
-		CSTHROW(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
+		lnthrow(ex::IOException, std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
 	}
 	ofs.write(reinterpret_cast<const char*>(data), dataLen);
 	if (!ofs) {
-		CSTHROW(std::string("I/O error writing to \"") + filename + "\"");
+		lnthrow(ex::IOException, std::string("I/O error writing to \"") + filename + "\"");
 	}
 }
 
@@ -64,7 +70,7 @@ int compare(const char* filename, const void* data, long dataLen) {
 
 	ifs.open(filename);
 	if (!ifs) {
-		CSTHROW(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno));
+		lnthrow(ex::IOException, std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno));
 	}
 
 	do {
@@ -100,11 +106,11 @@ int compare(const char* filename, const char* otherFilename) {
 
 	ifs1.open(filename);
 	if (!ifs1) {
-		CSTHROW(std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
+		lnthrow(ex::IOException, std::string("Failed to open \"") + filename + "\" (" + std::strerror(errno) + ")");
 	}
 	ifs2.open(otherFilename);
 	if (!ifs2) {
-		CSTHROW(std::string("Failed to open \"") + otherFilename + "\" (" + std::strerror(errno) + ")");
+		lnthrow(ex::IOException, std::string("Failed to open \"") + otherFilename + "\" (" + std::strerror(errno) + ")");
 	}
 
 	do {
@@ -200,7 +206,7 @@ struct TestEnvironment::TestEnvironmentImpl {
 	 */
 	void makeDirectory(const char* path, int nFiles = 20, const char* prefix = "test", const char* suffix = ".txt", int maxFileLen = 4096, unsigned seed = 0) {
 		if (mkdir(path, 0755) != 0) {
-			CSTHROW(std::string("Failed to create directory \"") + path + "\" (" + std::strerror(errno) + ")");
+			lnthrow(ex::IOException, std::string("Failed to create directory \"") + path + "\" (" + std::strerror(errno) + ")");
 		}
 		this->dirs.insert(path);
 
@@ -239,15 +245,15 @@ TestEnvironment TestEnvironment::Full(const char* basePath, int nFilesPerDir, in
 	te.impl->makeDirectory(makePath({basePath, "dir2"}).c_str(), nFilesPerDir, "d2_", ".txt", maxFileLen);
 	te.impl->makeDirectory(makePath({basePath, "excl"}).c_str(), nFilesPerDir, "ex_", ".txt", maxFileLen);
 	if (mkdir(noaccDirPath.c_str(), 0755) != 0) {
-		CSTHROW(std::string("Failed to create directory \"") + noaccDirPath + "\" (" + std::strerror(errno) + ")");
+		lnthrow(ex::IOException, std::string("Failed to create directory \"") + noaccDirPath + "\" (" + std::strerror(errno) + ")");
 	}
 	te.impl->dirs.insert(noaccDirPath);
 	createFile(noaccFilePath.c_str(), noaccContents, std::strlen(noaccContents));
 	if (chmod(noaccFilePath.c_str(), 0000) != 0) {
-		CSTHROW(std::string("Failed to chmod \"") + noaccFilePath.c_str() + "\" (" + std::string(std::strerror(errno)) + ")");
+		lnthrow(ex::IOException, std::string("Failed to chmod \"") + noaccFilePath.c_str() + "\" (" + std::string(std::strerror(errno)) + ")");
 	}
 	if (chmod(noaccDirPath.c_str(), 0000) != 0) {
-		CSTHROW(std::string("Failed to chmod dir \"") + noaccDirPath.c_str() + "\" (" + std::string(std::strerror(errno)) + ")");
+		lnthrow(ex::IOException, std::string("Failed to chmod dir \"") + noaccDirPath.c_str() + "\" (" + std::string(std::strerror(errno)) + ")");
 	}
 
 	return te;
