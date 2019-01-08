@@ -124,9 +124,8 @@ struct ConfigFile::ConfigFileImpl {
 		}
 
 		// Create a temp file so if there are errors, the original file is untouched.
-		std::pair<std::string, std::fstream> tmpFileBuf = fs::makeTemp();
-		std::pair<std::string, std::fstream> tmpFileSave = fs::makeTemp();
-		std::fstream& fs = tmpFileBuf.second;
+		std::pair<std::string, std::ofstream> tmpFile = fs::makeTemp(fs::parentDir(this->path.c_str()).c_str());
+		std::ofstream& fs = tmpFile.second;
 
 		fs.write(CF_HEADER, strlen(CF_HEADER));
 		std::for_each(this->entries.begin(), this->entries.end(), [&fs](const std::pair<std::string, std::vector<unsigned char>>& elem){
@@ -144,16 +143,16 @@ struct ConfigFile::ConfigFileImpl {
 		// If there were any I/O errors.
 		fs.close();
 		if (!fs.good()) {
-			lnthrow(fs::IOException, std::string("I/O error writing to file \"") + this->path + " (" + std::strerror(errno) + ")");
+			lnthrow(fs::IOException, std::string("I/O error writing to temp file \"") + tmpFile.first + " (" + std::strerror(errno) + ")");
 		}
 
 		// Finally, replace the old file with the new one.
+		fs::remove(this->path.c_str());
 		try {
-			fs::move(this->path.c_str(), tmpFileSave.first.c_str());
-
+			fs::move(tmpFile.first.c_str(), this->path.c_str());
 		}
 		catch (fs::IOException& e) {
-			lnthrow(fs::IOException, "I/O error replacing file \"" + this->path + "\" with temp file\"" + tmpFileBuf.first + "\"", e);
+			lnthrow(fs::IOException, "I/O error replacing file \"" + this->path + "\" with temp file\"" + tmpFile.first + "\"", e);
 		}
 
 		this->pending = false;

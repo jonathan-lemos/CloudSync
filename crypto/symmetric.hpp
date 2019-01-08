@@ -14,7 +14,7 @@
 
 namespace CloudSync::Crypto {
 
-enum BlockCipher {
+enum class BlockCipher {
 	AES = 0,
 	BLOWFISH = 1,
 	CAMELLIA = 2,
@@ -22,7 +22,7 @@ enum BlockCipher {
 	RIJNDAEL = 0,
 };
 
-enum CipherMode {
+enum class CipherMode {
 	CCM = 0,
 	CBC = 1,
 	CFB = 2,
@@ -32,12 +32,13 @@ enum CipherMode {
 };
 
 class Symmetric {
-	Symmetric(const char* password, BlockCipher bc = AES, int keySize = 256, CipherMode cb = GCM);
-	Symmetric(const char* key, const SecBytes& iv, BlockCipher bc = AES, int keySize = 256, CipherMode cb = GCM);
-	void encryptData(const unsigned char* in, size_t inLen, unsigned char* out, size_t outLen);
-	void encryptFile(const char* filenameIn, const char* filenameOut);
-	void encryptFile(const char* filenameInOut);
-	~Symmetric();
+public:
+	Symmetric(const char* password, BlockCipher bc = BlockCipher::AES, int keySize = 256, CipherMode cb = CipherMode::GCM);
+	Symmetric(const char* key, const SecBytes& iv, BlockCipher bc = BlockCipher::AES, int keySize = 256, CipherMode cb = CipherMode::GCM);
+	void encryptData(const unsigned char* in, size_t inLen, unsigned char* out, size_t outLen) const;
+	void encryptFile(const char* filenameIn, const char* filenameOut) const;
+	void encryptFile(const char* filenameInOut) const;
+	~Symmetric() noexcept;
 
 private:
 	struct SymmetricImpl;

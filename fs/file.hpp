@@ -159,11 +159,16 @@ bool createDirectory(const char* path);
 /**
  * @brief Creates a temporary file.
  *
- * @return A pair. The first element (std::string) is the filename. The second element (std::fstream) is an fstream corresponding to the file.
+ * @return A pair. The first element (std::string) is the filename. The second element (std::ofstream) is an ofstream corresponding to the file.
  *
  * @exception IOException I/O error.
  */
-std::pair<std::string, std::fstream> makeTemp();
+std::pair<std::string, std::ofstream> makeTemp(const char* baseDir = nullptr);
+
+/**
+ * @brief Returns the parent directory of a directory.
+ */
+std::string parentDir(const char* dir);
 
 }
 

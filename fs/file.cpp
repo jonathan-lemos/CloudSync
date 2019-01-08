@@ -92,7 +92,7 @@ uint64_t size(const char* path) {
 }
 
 void move(const char* src, const char* dst) {
-	if (std::strcmp(src, dst) == 0) {
+	if (std::filesystem::equivalent(src, dst)) {
 		return;
 	}
 	if (exists(dst)) {
@@ -108,7 +108,7 @@ void move(const char* src, const char* dst) {
 }
 
 void copy(const char* src, const char* dst) {
-	if (std::strcmp(src, dst) == 0) {
+	if (std::filesystem::equivalent(src, dst)) {
 		return;
 	}
 	if (!exists(src)) {
@@ -150,6 +150,9 @@ bool remove(const char* path) {
 }
 
 void createSymlink(const char* path, const char* target) {
+	if (std::filesystem::equivalent(path, target)) {
+		lnthrow(ExistsException, std::string("Cannot symlink \"") + path + "\" to itself.");
+	}
 	if (exists(path)) {
 		lnthrow(ExistsException, std::string("Symlink path \"") + path + "\" already exists");
 	}
@@ -181,10 +184,10 @@ bool createDirectory(const char* path) {
 	return true;
 }
 
-std::pair<std::string, std::fstream> makeTemp() {
-	const std::filesystem::path base = std::filesystem::temp_directory_path();
+std::pair<std::string, std::ofstream> makeTemp(const char* baseDir) {
+	const std::filesystem::path base = baseDir ? baseDir : std::filesystem::temp_directory_path();
 	std::filesystem::path file;
-	std::fstream fs;
+	std::ofstream fs;
 
 	do {
 		const char alphabet[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-";
@@ -200,8 +203,15 @@ std::pair<std::string, std::fstream> makeTemp() {
 		file += tmpname;
 	} while (exists(file.c_str()));
 
-	fs.open(file.c_str());
+	fs.open(file.c_str(), std::ios_base::out | std::ios_base::binary);
+	if (!fs) {
+		lnthrow(IOException, std::string("Failed to create temp file \"") + file.c_str() + "\" (" + std::strerror(errno) + ")");
+	}
 	return std::make_pair(std::string(file.c_str()), std::move(fs));
+}
+
+std::string parentDir(const char* dir) {
+	return std::filesystem::path(dir).parent_path().generic_u8string();
 }
 
 }
