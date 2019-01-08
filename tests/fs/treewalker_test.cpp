@@ -19,6 +19,15 @@ TEST(TreeWalkerTest, MainTest) {
 	CloudSync::fs::TreeWalker fi(tmpPath);
 	const char* current = fi.nextEntry();
 
+	for (auto it = files.begin(); it != files.end(); ) {
+		if (std::regex_match(*it, std::regex(".*noacc.*"))) {
+			files.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+
 	while (current != nullptr) {
 		ASSERT_TRUE(files.find(current) != files.end());
 		files.erase(files.find(current));
@@ -34,17 +43,8 @@ TEST(TreeWalkerTest, MainTest) {
 		} while (1);
 	}
 
-	for (auto it = files.begin(); it != files.end(); ) {
-		if (std::regex_match(*it, std::regex(".*noacc.*"))) {
-			files.erase(it);
-		}
-		else {
-			++it;
-		}
-	}
-
 	std::for_each(files.begin(), files.end(), [](const auto& elem) {
-		std::cout << elem << std::endl;
+		std::cout << "not iterated:" << elem << std::endl;
 	});
 
 	EXPECT_TRUE(files.size() == 0);

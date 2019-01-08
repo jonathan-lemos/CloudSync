@@ -156,9 +156,12 @@ TEST_F(TestExtTest, TestEnvironmentBasicTest) {
 	std::unordered_set<std::string> dirs;
 	std::unordered_set<std::string> files;
 	{
-		TestExt::TestEnvironment te(TestExt::TestEnvironment::Basic(testDir));
+		TestExt::TestEnvironment te(TestExt::TestEnvironment::Basic(testDir, 20));
 		dirs = std::unordered_set(te.getDirs());
 		files = std::unordered_set(te.getFiles());
+
+		EXPECT_TRUE(dirs.size() == 1);
+		EXPECT_TRUE(files.size() == 20);
 
 		for (auto s : dirs) {
 			EXPECT_TRUE(TestExt::dirExists(s.c_str()));

@@ -37,7 +37,7 @@ const char* bcToString(BlockCipher bc) {
 	case BlockCipher::CAST6:
 		return "CAST6";
 	default:
-		; // shut up gcc
+		lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug."); // shut up gcc
 	}
 }
 
@@ -56,7 +56,7 @@ const char* cmToString(CipherMode cm) {
 	case CipherMode::GCM:
 		return "GCM";
 	default:
-		; // shut up gcc
+		lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 	}
 }
 
@@ -77,7 +77,7 @@ std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP
 		case CipherMode::GCM:
 			return std::make_unique<CryptoPP::GCM<CryptoPP::AES>::Encryption>(CryptoPP::GCM<CryptoPP::AES>::Encryption());
 		default:
-			; // shut up gcc
+			lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 		}
 	case BlockCipher::BLOWFISH:
 		switch (cm) {
@@ -94,7 +94,7 @@ std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP
 		case CipherMode::GCM:
 			return std::make_unique<CryptoPP::GCM<CryptoPP::Blowfish>::Encryption>(CryptoPP::GCM<CryptoPP::Blowfish>::Encryption());
 		default:
-			; // shut up gcc
+			lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 		}
 	case BlockCipher::CAMELLIA:
 		switch (cm) {
@@ -111,7 +111,7 @@ std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP
 		case CipherMode::GCM:
 			return std::make_unique<CryptoPP::GCM<CryptoPP::Camellia>::Encryption>(CryptoPP::GCM<CryptoPP::Camellia>::Encryption());
 		default:
-			; // shut up gcc
+			lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 		}
 	case BlockCipher::CAST6:
 		switch (cm) {
@@ -128,10 +128,10 @@ std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP
 		case CipherMode::GCM:
 			return std::make_unique<CryptoPP::GCM<CryptoPP::CAST256>::Encryption>(CryptoPP::GCM<CryptoPP::CAST256>::Encryption());
 		default:
-			; // shut up gcc
+			lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 		}
 	default:
-		; // shut up gcc
+		lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 	}
 }
 
@@ -152,7 +152,7 @@ std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP
 		case CipherMode::GCM:
 			return std::make_unique<CryptoPP::GCM<CryptoPP::AES>::Decryption>(CryptoPP::GCM<CryptoPP::AES>::Decryption());
 		default:
-			; // shut up gcc
+			lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 		}
 	case BlockCipher::BLOWFISH:
 		switch (cm) {
@@ -169,7 +169,7 @@ std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP
 		case CipherMode::GCM:
 			return std::make_unique<CryptoPP::GCM<CryptoPP::Blowfish>::Decryption>(CryptoPP::GCM<CryptoPP::Blowfish>::Decryption());
 		default:
-			; // shut up gcc
+			lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 		}
 	case BlockCipher::CAMELLIA:
 		switch (cm) {
@@ -186,7 +186,7 @@ std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP
 		case CipherMode::GCM:
 			return std::make_unique<CryptoPP::GCM<CryptoPP::Camellia>::Decryption>(CryptoPP::GCM<CryptoPP::Camellia>::Decryption());
 		default:
-			; // shut up gcc
+			lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 		}
 	case BlockCipher::CAST6:
 		switch (cm) {
@@ -203,10 +203,10 @@ std::variant<std::unique_ptr<CryptoPP::CipherModeBase>, std::unique_ptr<CryptoPP
 		case CipherMode::GCM:
 			return std::make_unique<CryptoPP::GCM<CryptoPP::CAST256>::Decryption>(CryptoPP::GCM<CryptoPP::CAST256>::Decryption());
 		default:
-			; // shut up gcc
+			lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 		}
 	default:
-		; // shut up gcc
+		lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 	}
 }
 
@@ -221,7 +221,7 @@ int getBlockSize(BlockCipher bc) {
 	case BlockCipher::CAST6:
 		return CryptoPP::CAST256::BLOCKSIZE;
 	default:
-		; // shut up gcc
+		lnthrow(std::runtime_error, "Switch case covered all enums but still fell through. This is a major bug.");
 	}
 }
 
@@ -280,7 +280,6 @@ static void __encryptFile(std::ifstream& fsIn, std::ofstream& fsOut, const Symme
 void Symmetric::encryptFile(const char* filenameIn, const char* filenameOut) const {
 	std::ifstream ifs;
 	std::ofstream ofs;
-	size_t len;
 
 	ifs.open(filenameIn);
 	if (!ifs) {

@@ -14,7 +14,7 @@ CXXFLAGS:=-Wall -Wextra -pedantic -std=c++17 -DPROG_NAME=\"$(NAME)\" -DPROG_VERS
 DBGFLAGS:=-g
 RELEASEFLAGS:=-O3 -fomit-frame-pointer
 TESTFLAGS:=-lgtest
-LDFLAGS:=-lcryptopp -lmega -lstdc++ -lstcc++fs
+LDFLAGS:=-lcryptopp -lmega -lstdc++ -lstdc++fs
 
 DIRECTORIES=$(shell find . -type d 2>/dev/null -not -path './os*' -not -path 'git/*' | sed -re 's|^.*\.git.*$$||;s|.*/sdk.*$$||;s|^.*/tests.*$$||' | awk 'NF')
 FILES=$(foreach directory,$(DIRECTORIES),$(shell ls $(directory) | egrep '^.*\.cpp$$' | sed -re 's|^.*main.cpp$$||;s|^(.+)\.cpp$$|$(directory)/\1|' | awk 'NF')) tests/test_ext
