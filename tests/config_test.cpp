@@ -28,9 +28,10 @@ std::vector<unsigned char> makeSampleData(const std::vector<std::pair<std::strin
 	std::vector<unsigned char> ret;
 	ret.insert(ret.end(), header, header + std::strlen(header));
 	std::for_each(pairs.begin(), pairs.end(), [&ret](const auto& elem) {
-		size_t len = elem.second.size();
-		ret.insert(ret.end(), elem.first.c_str(), elem.first.c_str() + elem.first.length());
-		ret.insert(ret.end(), &len, &len + 1);
+		const size_t len = elem.second.size();
+		const unsigned char* const lenPtr = reinterpret_cast<const unsigned char*>(&len);
+		ret.insert(ret.end(), elem.first.c_str(), elem.first.c_str() + elem.first.length() + 1);
+		ret.insert(ret.end(), lenPtr, lenPtr + sizeof(len));
 		ret.insert(ret.end(), elem.second.begin(), elem.second.end());
 	});
 	return ret;
@@ -73,13 +74,13 @@ TEST_F(ConfigFileTest, ReadTest) {
 
 	CloudSync::ConfigFile cf(testFname);
 	auto res = cf.readEntry(key1);
-	EXPECT_TRUE(res);
+	EXPECT_TRUE(res.has_value());
 	EXPECT_TRUE(res.value().get() == data1);
 	res = cf.readEntry(key2);
-	EXPECT_TRUE(res);
+	EXPECT_TRUE(res.has_value());
 	EXPECT_TRUE(res.value().get() == data2);
 	res = cf.readEntry("noex");
-	EXPECT_TRUE(!res);
+	EXPECT_TRUE(!res.has_value());
 }
 
 TEST_F(ConfigFileTest, MultiTest) {
@@ -96,14 +97,21 @@ TEST_F(ConfigFileTest, MultiTest) {
 		EXPECT_TRUE(cf.removeEntry("key1"));
 
 		keys = cf.getKeys();
+
 		EXPECT_TRUE(keys.size() == 1);
 		EXPECT_TRUE(keys[0] == "key2");
-		EXPECT_TRUE(cf.readEntry(keys[0].c_str()).value().get() == data2);
+
+		auto res = cf.readEntry(keys[0].c_str());
+
+		EXPECT_TRUE(res.has_value());
+		EXPECT_TRUE(res.value().get() == data2);
+
 		cf.flush();
 
 		data = makeSampleData({ std::make_pair(key2, data2) });
 		EXPECT_TRUE(TestExt::compare(testFname, data) == 0);
 
+		cf.writeEntry(key1, data1);
 		cf.writeEntry(key1, data2);
 	}
 	data = makeSampleData({ std::make_pair(key1, data2), std::make_pair(key2, data2) });

@@ -34,7 +34,7 @@ namespace CloudSync{
  * This way any kind of data can be stored, even those with newlines and null chars.
  * Furthermore, any kind of key can also be stored, as a null terminator is used as the delimiter.
  */
-constexpr const char* CF_HEADER = "CF\n";
+constexpr const char CF_HEADER[] = "CF\n";
 
 struct ConfigFile::ConfigFileImpl {
 	/**
@@ -71,10 +71,10 @@ struct ConfigFile::ConfigFileImpl {
 			auto it = entries.begin() + mid;
 
 			if (it->first < s) {
-				left = right + 1;
+				left = mid + 1;
 			}
 			else if (it->first > s) {
-				right = left - 1;
+				right = mid - 1;
 			}
 			else {
 				return it;
@@ -90,21 +90,19 @@ struct ConfigFile::ConfigFileImpl {
 	 *
 	 * @param entry The entry to insert.
 	 */
-	void insertEntry(const std::pair<std::string, std::vector<unsigned char>>& entry) noexcept {
+	void insertEntry(const std::pair<std::string, std::vector<unsigned char>>&& entry) noexcept {
 		// Iterate in reverse because more often than not this will insert at the back.
-		auto pos = this->entries.rbegin();
-		for (; pos != this->entries.rend(); ++pos) {
-			// If an entry already exists with this key.
-			if (entry.first == pos->first) {
-				// Remove it, then decrement the iterator
-				this->entries.erase((++pos).base());
+		long i;
+		for (i = this->entries.size() - 1; i >= 0; --i) {
+			if (entry.first == this->entries[i].first) {
+				this->entries.erase(this->entries.begin() + i--);
 				break;
 			}
-			else if (entry.first < pos->first) {
+			if (entry.first > this->entries[i].first) {
 				break;
 			}
 		}
-		this->entries.insert(pos.base(), entry);
+		this->entries.insert(this->entries.begin() + ++i, entry);
 		this->pending = true;
 	}
 
@@ -160,7 +158,7 @@ struct ConfigFile::ConfigFileImpl {
 };
 
 ConfigFile::ConfigFile(const char* path): impl(std::make_unique<ConfigFileImpl>()) {
-	std::ifstream ifs(path);
+	std::ifstream ifs(path, std::ios_base::binary);
 	char headerBuf[sizeof(CF_HEADER)];
 
 	this->impl->path = path;
@@ -169,6 +167,7 @@ ConfigFile::ConfigFile(const char* path): impl(std::make_unique<ConfigFileImpl>(
 	if (!ifs.good()) {
 		// Set entries to an empty vector.
 		this->impl->entries = {};
+		this->impl->pending = true;
 		// Don't try to read the file.
 		return;
 	}
@@ -176,7 +175,7 @@ ConfigFile::ConfigFile(const char* path): impl(std::make_unique<ConfigFileImpl>(
 	// Read what should be the header into the header buffer.
 	ifs.read(headerBuf, sizeof(headerBuf) - 1);
 	// If the first n bytes of the file do not match the header.
-	if (strcmp(headerBuf, CF_HEADER) != 0) {
+	if (std::memcmp(headerBuf, CF_HEADER, sizeof(headerBuf)) != 0) {
 		lnthrow(fs::ExistsException, std::string("The file pointed to by \"") + path + "\" is not of the correct ConfigFile format");
 	}
 
